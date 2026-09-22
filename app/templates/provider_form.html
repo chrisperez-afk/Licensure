@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if provider else 'Add' }} Provider{% endblock %}
+{% block content %}
+
+<h1>{{ 'Edit' if provider else 'Add' }} Provider</h1>
+
+<form method="post" class="stacked-form">
+  <label>First Name<input type="text" name="first_name" value="{{ provider.first_name if provider else '' }}" required></label>
+  <label>Last Name<input type="text" name="last_name" value="{{ provider.last_name if provider else '' }}" required></label>
+  <label>Agency
+    <select name="agency_id" required>
+      {% for a in agencies %}
+      <option value="{{ a.id }}" {{ 'selected' if provider and provider.agency_id == a.id }}>{{ a.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Employee ID<input type="text" name="employee_id" value="{{ provider.employee_id if provider else '' }}"></label>
+  <label>Rank / Title<input type="text" name="rank_title" value="{{ provider.rank_title if provider else '' }}"></label>
+  <label>Email<input type="email" name="email" value="{{ provider.email if provider else '' }}"></label>
+  <label>Phone<input type="text" name="phone" value="{{ provider.phone if provider else '' }}"></label>
+  {% if provider %}
+  <label class="checkbox-label">
+    <input type="checkbox" name="active" {{ 'checked' if provider.active }}>
+    Active
+  </label>
+  {% endif %}
+  <button type="submit">{{ 'Save Changes' if provider else 'Add Provider' }}</button>
+</form>
+
+{% endblock %}

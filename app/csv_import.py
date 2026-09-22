@@ -1,0 +1,173 @@
+import csv
+import io
+from datetime import datetime
+
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import login_required
+
+from app import db
+from app.models import Agency, Certification, CertificationType, Provider
+
+csv_bp = Blueprint("csv_import", __name__, url_prefix="/import")
+
+REQUIRED_COLUMNS = ["first_name", "last_name", "agency"]
+OPTIONAL_COLUMNS = [
+    "employee_id", "rank_title", "email", "phone",
+    "certification", "certificate_number", "source",
+    "issue_date", "expiration_date",
+]
+
+TEMPLATE_HEADER = REQUIRED_COLUMNS + OPTIONAL_COLUMNS
+
+
+def _parse_date(value):
+    value = (value or "").strip()
+    if not value:
+        return None
+    for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%m-%d-%Y"):
+        try:
+            return datetime.strptime(value, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+@csv_bp.route("/template.csv")
+@login_required
+def template():
+    from flask import Response
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(TEMPLATE_HEADER)
+    writer.writerow(
+        [
+            "Jane", "Doe", "Bexar County 2 Fire Department", "1234", "Firefighter/Paramedic",
+            "jane.doe@example.com", "210-555-0100", "NREMT - Paramedic", "E123456",
+            "NREMT", "2023-01-15", "2027-01-15",
+        ]
+    )
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=roster-import-template.csv"},
+    )
+
+
+@csv_bp.route("", methods=["GET", "POST"])
+@login_required
+def import_csv():
+    if request.method == "POST":
+        file = request.files.get("csv_file")
+        if not file or file.filename == "":
+            flash("Choose a CSV file to upload.", "danger")
+            return redirect(url_for("csv_import.import_csv"))
+
+        try:
+            stream = io.StringIO(file.stream.read().decode("utf-8-sig"))
+        except UnicodeDecodeError:
+            flash("Could not read that file. Save it as UTF-8 CSV and try again.", "danger")
+            return redirect(url_for("csv_import.import_csv"))
+
+        reader = csv.DictReader(stream)
+        missing = [c for c in REQUIRED_COLUMNS if c not in (reader.fieldnames or [])]
+        if missing:
+            flash(
+                f"CSV is missing required column(s): {', '.join(missing)}. "
+                f"Download the template below for the expected format.",
+                "danger",
+            )
+            return redirect(url_for("csv_import.import_csv"))
+
+        providers_created = 0
+        providers_updated = 0
+        certs_created = 0
+        row_errors = []
+
+        for i, row in enumerate(reader, start=2):  # row 1 is the header
+            first_name = (row.get("first_name") or "").strip()
+            last_name = (row.get("last_name") or "").strip()
+            agency_name = (row.get("agency") or "").strip()
+
+            if not first_name or not last_name or not agency_name:
+                row_errors.append(f"Row {i}: missing first name, last name, or agency.")
+                continue
+
+            agency = Agency.query.filter_by(name=agency_name).first()
+            if not agency:
+                agency = Agency(name=agency_name)
+                db.session.add(agency)
+                db.session.flush()
+
+            provider = Provider.query.filter_by(
+                first_name=first_name, last_name=last_name, agency_id=agency.id
+            ).first()
+            if provider:
+                providers_updated += 1
+            else:
+                provider = Provider(
+                    first_name=first_name, last_name=last_name, agency_id=agency.id
+                )
+                db.session.add(provider)
+                providers_created += 1
+
+            employee_id = (row.get("employee_id") or "").strip()
+            if employee_id:
+                provider.employee_id = employee_id
+            rank_title = (row.get("rank_title") or "").strip()
+            if rank_title:
+                provider.rank_title = rank_title
+            email = (row.get("email") or "").strip()
+            if email:
+                provider.email = email
+            phone = (row.get("phone") or "").strip()
+            if phone:
+                provider.phone = phone
+
+            db.session.flush()
+
+            cert_name = (row.get("certification") or "").strip()
+            if cert_name:
+                cert_type = CertificationType.query.filter_by(name=cert_name).first()
+                if not cert_type:
+                    cert_type = CertificationType(
+                        name=cert_name,
+                        default_source=(row.get("source") or "OTHER").strip().upper() or "OTHER",
+                    )
+                    db.session.add(cert_type)
+                    db.session.flush()
+
+                cert = Certification.query.filter_by(
+                    provider_id=provider.id, cert_type_id=cert_type.id
+                ).first()
+                if not cert:
+                    cert = Certification(provider_id=provider.id, cert_type_id=cert_type.id)
+                    db.session.add(cert)
+                    certs_created += 1
+
+                cert_number = (row.get("certificate_number") or "").strip()
+                if cert_number:
+                    cert.certificate_number = cert_number
+                source = (row.get("source") or "").strip().upper()
+                if source in ("DSHS", "NREMT", "OTHER"):
+                    cert.source = source
+                issue_date = _parse_date(row.get("issue_date"))
+                if issue_date:
+                    cert.issue_date = issue_date
+                expiration_date = _parse_date(row.get("expiration_date"))
+                if expiration_date:
+                    cert.expiration_date = expiration_date
+
+        db.session.commit()
+
+        summary = (
+            f"Import complete: {providers_created} provider(s) added, "
+            f"{providers_updated} matched/updated, {certs_created} certification(s) added."
+        )
+        flash(summary, "success")
+        for err in row_errors[:20]:
+            flash(err, "warning")
+
+        return redirect(url_for("main.dashboard"))
+
+    return render_template("import.html")

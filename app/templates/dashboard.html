@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="summary-cards">
+  <a class="card status-expired {{ 'active' if status_filter == 'expired' }}"
+     href="{{ url_for('main.dashboard', status='expired', agency_id=agency_id) }}">
+    <div class="card-count">{{ counts.get('expired', 0) }}</div>
+    <div class="card-label">Expired</div>
+  </a>
+  <a class="card status-critical {{ 'active' if status_filter == 'critical' }}"
+     href="{{ url_for('main.dashboard', status='critical', agency_id=agency_id) }}">
+    <div class="card-count">{{ counts.get('critical', 0) }}</div>
+    <div class="card-label">Expiring &le; 30 days</div>
+  </a>
+  <a class="card status-warning {{ 'active' if status_filter == 'warning' }}"
+     href="{{ url_for('main.dashboard', status='warning', agency_id=agency_id) }}">
+    <div class="card-count">{{ counts.get('warning', 0) }}</div>
+    <div class="card-label">Expiring &le; 90 days</div>
+  </a>
+  <a class="card status-current {{ 'active' if status_filter == 'current' }}"
+     href="{{ url_for('main.dashboard', status='current', agency_id=agency_id) }}">
+    <div class="card-count">{{ counts.get('current', 0) }}</div>
+    <div class="card-label">Current</div>
+  </a>
+  <a class="card" href="{{ url_for('main.dashboard', agency_id=agency_id) }}">
+    <div class="card-count">{{ (counts.get('expired',0) + counts.get('critical',0) + counts.get('warning',0) + counts.get('current',0)) }}</div>
+    <div class="card-label">All Tracked Certs</div>
+  </a>
+</div>
+
+<form class="filters" method="get">
+  <input type="text" name="q" placeholder="Search name or cert #" value="{{ search }}">
+  <select name="agency_id">
+    <option value="">All Agencies</option>
+    {% for a in agencies %}
+      <option value="{{ a.id }}" {{ 'selected' if agency_id == a.id }}>{{ a.name }}</option>
+    {% endfor %}
+  </select>
+  <select name="cert_type_id">
+    <option value="">All Certification Types</option>
+    {% for ct in cert_types %}
+      <option value="{{ ct.id }}" {{ 'selected' if cert_type_id == ct.id }}>{{ ct.name }}</option>
+    {% endfor %}
+  </select>
+  {% if status_filter %}<input type="hidden" name="status" value="{{ status_filter }}">{% endif %}
+  <label class="checkbox-label">
+    <input type="checkbox" name="show_inactive" value="1" {{ 'checked' if show_inactive }}>
+    Include inactive providers
+  </label>
+  <button type="submit">Filter</button>
+  <a class="button-link" href="{{ url_for('main.dashboard') }}">Clear</a>
+</form>
+
+<table class="cert-table">
+  <thead>
+    <tr>
+      <th>Provider</th>
+      <th>Agency</th>
+      <th>Certification</th>
+      <th>Cert #</th>
+      <th>Source</th>
+      <th>Expiration</th>
+      <th>Days Left</th>
+      <th>Status</th>
+      <th>Last Verified</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for cert in certifications %}
+    <tr class="{{ status_css.get(cert.status()) }}">
+      <td><a href="{{ url_for('main.provider_detail', provider_id=cert.provider.id) }}">{{ cert.provider.full_name }}</a></td>
+      <td>{{ cert.provider.agency.name }}</td>
+      <td>{{ cert.cert_type.name }}</td>
+      <td>{{ cert.certificate_number or '—' }}</td>
+      <td>{{ cert.source }}</td>
+      <td>{{ cert.expiration_date.strftime('%m/%d/%Y') if cert.expiration_date else '—' }}</td>
+      <td>{{ cert.days_until_expiration() }}</td>
+      <td><span class="badge {{ status_css.get(cert.status()) }}">{{ status_labels.get(cert.status(), '') }}</span></td>
+      <td>{{ cert.last_verified_date.strftime('%m/%d/%Y') if cert.last_verified_date else 'Never' }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="9" class="empty">No certifications match these filters.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

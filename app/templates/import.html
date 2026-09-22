@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Import CSV{% endblock %}
+{% block content %}
+
+<h1>Import Roster / Certifications from CSV</h1>
+
+<p>
+  Upload a CSV of your roster and certification data. Matching is done by
+  first name + last name + agency, so re-uploading an updated file is safe —
+  existing providers are updated, not duplicated. Each row can optionally
+  carry one certification; use multiple rows per person to add multiple
+  certifications at once.
+</p>
+
+<p><a class="button-link" href="{{ url_for('csv_import.template') }}">Download CSV Template</a></p>
+
+<form method="post" enctype="multipart/form-data" class="stacked-form">
+  <label>CSV File<input type="file" name="csv_file" accept=".csv" required></label>
+  <button type="submit">Upload &amp; Import</button>
+</form>
+
+<h2>Expected Columns</h2>
+<table class="cert-table">
+  <thead><tr><th>Column</th><th>Required</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>first_name</td><td>Yes</td><td></td></tr>
+    <tr><td>last_name</td><td>Yes</td><td></td></tr>
+    <tr><td>agency</td><td>Yes</td><td>Created automatically if it doesn't exist yet</td></tr>
+    <tr><td>employee_id</td><td>No</td><td></td></tr>
+    <tr><td>rank_title</td><td>No</td><td></td></tr>
+    <tr><td>email</td><td>No</td><td></td></tr>
+    <tr><td>phone</td><td>No</td><td></td></tr>
+    <tr><td>certification</td><td>No</td><td>e.g. "NREMT - Paramedic"; created automatically if new</td></tr>
+    <tr><td>certificate_number</td><td>No</td><td></td></tr>
+    <tr><td>source</td><td>No</td><td>DSHS, NREMT, or OTHER</td></tr>
+    <tr><td>issue_date</td><td>No</td><td>YYYY-MM-DD or MM/DD/YYYY</td></tr>
+    <tr><td>expiration_date</td><td>No</td><td>YYYY-MM-DD or MM/DD/YYYY</td></tr>
+  </tbody>
+</table>
+
+{% endblock %}

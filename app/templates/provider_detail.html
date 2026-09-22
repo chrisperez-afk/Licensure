@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}{{ provider.full_name }}{% endblock %}
+{% block content %}
+
+<div class="detail-header">
+  <div>
+    <h1>{{ provider.full_name }}{% if not provider.active %} <span class="badge status-expired">Inactive</span>{% endif %}</h1>
+    <p class="muted">
+      {{ provider.agency.name }}
+      {% if provider.rank_title %} · {{ provider.rank_title }}{% endif %}
+      {% if provider.employee_id %} · ID {{ provider.employee_id }}{% endif %}
+    </p>
+    {% if provider.email or provider.phone %}
+    <p class="muted">{{ provider.email or '' }}{% if provider.email and provider.phone %} · {% endif %}{{ provider.phone or '' }}</p>
+    {% endif %}
+  </div>
+  <div class="detail-actions">
+    <a class="button-link" href="{{ url_for('main.provider_edit', provider_id=provider.id) }}">Edit Provider</a>
+    <form method="post" action="{{ url_for('main.provider_delete', provider_id=provider.id) }}"
+          onsubmit="return confirm('Remove {{ provider.full_name }} and all their certification records? This cannot be undone.');">
+      <button type="submit" class="button-danger">Delete Provider</button>
+    </form>
+  </div>
+</div>
+
+<h2>Certifications</h2>
+<table class="cert-table">
+  <thead>
+    <tr>
+      <th>Type</th><th>Cert #</th><th>Source</th><th>Issued</th><th>Expires</th>
+      <th>Status</th><th>Last Verified</th><th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for cert in provider.certifications %}
+    <tr class="{{ status_css.get(cert.status()) }}">
+      <form id="cert-edit-{{ cert.id }}" method="post" action="{{ url_for('main.certification_edit', cert_id=cert.id) }}"></form>
+      <td>
+        <select name="cert_type_id" form="cert-edit-{{ cert.id }}">
+          {% for ct in cert_types %}
+          <option value="{{ ct.id }}" {{ 'selected' if ct.id == cert.cert_type_id }}>{{ ct.name }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td><input type="text" name="certificate_number" form="cert-edit-{{ cert.id }}" value="{{ cert.certificate_number or '' }}" size="10"></td>
+      <td>
+        <select name="source" form="cert-edit-{{ cert.id }}">
+          {% for key, info in sources.items() %}
+          <option value="{{ key }}" {{ 'selected' if key == cert.source }}>{{ info.label }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td><input type="date" name="issue_date" form="cert-edit-{{ cert.id }}" value="{{ cert.issue_date.isoformat() if cert.issue_date else '' }}"></td>
+      <td><input type="date" name="expiration_date" form="cert-edit-{{ cert.id }}" value="{{ cert.expiration_date.isoformat() if cert.expiration_date else '' }}"></td>
+      <td>
+        {% if cert.expiration_date %}
+        <span class="badge {{ status_css.get(cert.status()) }}">{{ status_labels.get(cert.status(), '') }}</span>
+        ({{ cert.days_until_expiration() }}d)
+        {% else %}—{% endif %}
+      </td>
+      <td>{{ cert.last_verified_date.strftime('%m/%d/%Y') if cert.last_verified_date else 'Never' }}</td>
+      <td class="cert-actions">
+        <button type="submit" form="cert-edit-{{ cert.id }}">Save</button>
+        {% if cert.verify_url() %}
+        <a class="button-link" target="_blank" rel="noopener" href="{{ cert.verify_url() }}" title="Look this person up on the official site, then click Verified below">Check on {{ sources[cert.source].label }} ↗</a>
+        {% endif %}
+        <form method="post" action="{{ url_for('main.certification_verify', cert_id=cert.id) }}" class="inline-form">
+          <button type="submit" class="button-secondary" title="Mark that you confirmed this today">Verified Today</button>
+        </form>
+        <form method="post" action="{{ url_for('main.certification_delete', cert_id=cert.id) }}"
+              onsubmit="return confirm('Remove this certification record?');" class="inline-form">
+          <button type="submit" class="button-danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8" class="empty">No certifications on file yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>Add Certification</h2>
+<form method="post" action="{{ url_for('main.certification_new', provider_id=provider.id) }}" class="stacked-form">
+  <label>Type
+    <select name="cert_type_id" required>
+      {% for ct in cert_types %}
+      <option value="{{ ct.id }}">{{ ct.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Certificate #<input type="text" name="certificate_number"></label>
+  <label>Source
+    <select name="source">
+      {% for key, info in sources.items() %}
+      <option value="{{ key }}">{{ info.label }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Issue Date<input type="date" name="issue_date"></label>
+  <label>Expiration Date<input type="date" name="expiration_date"></label>
+  <label class="notes-label">Notes<textarea name="notes" rows="2"></textarea></label>
+  <button type="submit">Add Certification</button>
+</form>
+
+<p class="muted note-box">
+  Neither Texas DSHS nor NREMT provides a bulk/automated data feed — expiration
+  dates above are only as current as the last manual entry or "Verified Today"
+  check. Use the "Check on DSHS/NREMT" links to confirm a record on the
+  official site, then click <strong>Verified Today</strong> to log it.
+</p>
+
+{% endblock %}

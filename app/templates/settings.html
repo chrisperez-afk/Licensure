@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block content %}
+
+<h1>Settings</h1>
+
+<h2>Agencies</h2>
+<ul>
+  {% for a in agencies %}<li>{{ a.name }} ({{ a.providers|length }} providers)</li>{% endfor %}
+</ul>
+<form method="post" class="inline-form">
+  <input type="hidden" name="form_type" value="agency">
+  <input type="text" name="name" placeholder="New agency name" required>
+  <button type="submit">Add Agency</button>
+</form>
+
+<h2>Certification Types</h2>
+<ul>
+  {% for ct in cert_types %}<li>{{ ct.name }} — default source: {{ sources[ct.default_source].label if ct.default_source in sources else ct.default_source }}</li>{% endfor %}
+</ul>
+<form method="post" class="inline-form">
+  <input type="hidden" name="form_type" value="cert_type">
+  <input type="text" name="name" placeholder="New certification type" required>
+  <select name="default_source">
+    {% for key, info in sources.items() %}
+    <option value="{{ key }}">{{ info.label }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Add Certification Type</button>
+</form>
+
+<h2>Expiration Thresholds</h2>
+<p class="muted">
+  Currently configured via the <code>WARNING_DAYS</code> and
+  <code>CRITICAL_DAYS</code> environment variables (default 90 and 30 days).
+  Edit your <code>.env</code> file and restart the app to change them.
+</p>
+
+{% endblock %}

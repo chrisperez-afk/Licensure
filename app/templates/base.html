@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Licensure Dashboard{% endblock %} · Bexar County 2 FD</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  {% if current_user.is_authenticated %}
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="{{ url_for('main.dashboard') }}">EMS Licensure Dashboard</a>
+      <nav>
+        <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('main.provider_new') }}">Add Provider</a>
+        <a href="{{ url_for('csv_import.import_csv') }}">Import CSV</a>
+        <a href="{{ url_for('main.export_csv') }}">Export CSV</a>
+        <a href="{{ url_for('main.settings') }}">Settings</a>
+        <a href="{{ url_for('auth.logout') }}">Log out ({{ current_user.username }})</a>
+      </nav>
+    </div>
+  </header>
+  {% endif %}
+
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flashes">
+          {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
