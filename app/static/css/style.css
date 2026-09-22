@@ -1,6 +1,14 @@
 :root {
-  --red: #c0392b;
-  --red-bg: #fdecea;
+  /* Bexar County ESD 2 badge colors: navy shield, gold trim/lettering,
+     maroon center. */
+  --brand-navy: #14213d;
+  --brand-navy-dark: #0c1526;
+  --brand-gold: #c9a227;
+  --brand-gold-dark: #a3821c;
+  --brand-maroon: #8f1d21;
+
+  --red: #8f1d21;
+  --red-bg: #fbeaea;
   --orange: #d35400;
   --orange-bg: #fdf1e3;
   --yellow: #9a7d0a;
@@ -23,8 +31,9 @@ body {
 }
 
 .topbar {
-  background: #14213d;
+  background: var(--brand-navy);
   color: white;
+  border-bottom: 3px solid var(--brand-gold);
 }
 .topbar-inner {
   max-width: 1200px;
@@ -36,14 +45,14 @@ body {
   flex-wrap: wrap;
   gap: 0.5rem;
 }
-.brand { color: white; font-weight: 700; text-decoration: none; font-size: 1.1rem; }
+.brand { color: var(--brand-gold); font-weight: 700; text-decoration: none; font-size: 1.1rem; letter-spacing: 0.02em; }
 .topbar nav a {
   color: #cbd5e1;
   text-decoration: none;
   margin-left: 1.1rem;
   font-size: 0.92rem;
 }
-.topbar nav a:hover { color: white; }
+.topbar nav a:hover { color: var(--brand-gold); }
 
 .container {
   max-width: 1200px;
@@ -52,6 +61,8 @@ body {
 }
 
 .muted { color: var(--muted); }
+
+h1, h2 { color: var(--brand-navy); }
 
 .flashes { margin-bottom: 1rem; }
 .flash {
@@ -63,7 +74,7 @@ body {
 .flash-success { background: var(--green-bg); color: var(--green); }
 .flash-danger { background: var(--red-bg); color: var(--red); }
 .flash-warning { background: var(--yellow-bg); color: var(--yellow); }
-.flash-info { background: #e8eef7; color: #2c4a7c; }
+.flash-info { background: #e8eef7; color: var(--brand-navy); }
 
 .summary-cards {
   display: grid;
@@ -81,7 +92,7 @@ body {
   text-align: center;
   transition: box-shadow 0.15s;
 }
-.card:hover, .card.active { box-shadow: 0 0 0 2px var(--ink) inset; }
+.card:hover, .card.active { box-shadow: 0 0 0 2px var(--brand-gold-dark) inset; }
 .card-count { font-size: 1.8rem; font-weight: 700; }
 .card-label { font-size: 0.85rem; color: var(--muted); margin-top: 0.25rem; }
 
@@ -156,12 +167,15 @@ button, .button-link, .button-danger, .button-secondary {
   display: inline-block;
 }
 button[type="submit"], .filters button {
-  background: #14213d;
-  color: white;
-  border-color: #14213d;
+  background: var(--brand-gold);
+  color: var(--brand-navy-dark);
+  border-color: var(--brand-gold-dark);
+  font-weight: 600;
 }
+button[type="submit"]:hover, .filters button:hover { background: var(--brand-gold-dark); }
 .button-danger { color: var(--red); border-color: var(--red); }
-.button-secondary { color: #2c4a7c; border-color: #2c4a7c; }
+.button-secondary { color: var(--brand-navy); border-color: var(--brand-navy); }
+.button-link:hover { border-color: var(--brand-navy); color: var(--brand-navy); }
 
 .stacked-form {
   display: flex;

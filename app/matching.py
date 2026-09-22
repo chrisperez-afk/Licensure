@@ -51,3 +51,39 @@ def find_or_create_provider(first_name, last_name, agency):
     db.session.add(provider)
     db.session.flush()
     return provider, True
+
+
+_BACKFILL_FIELDS = ["employee_id", "rank_title", "email", "phone", "nremt_ems_id"]
+
+
+def merge_providers(source, target):
+    """Fold `source` into `target`: move every certification over (skipping
+    any that would exactly duplicate one `target` already has by
+    certificate number), backfill any contact fields `target` is missing
+    from `source`, then delete `source`.
+
+    For the case automated matching can't safely resolve on its own — two
+    records for what a human knows is the same person, whose names didn't
+    line up closely enough (or at all) for the automatic matching in this
+    module to have merged them on its own during a sync.
+    """
+    stats = {"certs_moved": 0, "certs_skipped_duplicate": 0, "fields_backfilled": 0}
+
+    target_numbers = {c.certificate_number for c in target.certifications if c.certificate_number}
+
+    for cert in list(source.certifications):
+        if cert.certificate_number and cert.certificate_number in target_numbers:
+            db.session.delete(cert)
+            stats["certs_skipped_duplicate"] += 1
+            continue
+        cert.provider_id = target.id
+        stats["certs_moved"] += 1
+
+    for field in _BACKFILL_FIELDS:
+        if not getattr(target, field) and getattr(source, field):
+            setattr(target, field, getattr(source, field))
+            stats["fields_backfilled"] += 1
+
+    db.session.delete(source)
+    db.session.commit()
+    return stats

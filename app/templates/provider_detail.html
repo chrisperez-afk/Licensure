@@ -16,6 +16,7 @@
   </div>
   <div class="detail-actions">
     <a class="button-link" href="{{ url_for('main.provider_edit', provider_id=provider.id) }}">Edit Provider</a>
+    <a class="button-link" href="{{ url_for('main.provider_merge', provider_id=provider.id) }}" title="If this is a duplicate of someone already in the system">Merge Duplicate</a>
     <form method="post" action="{{ url_for('main.provider_delete', provider_id=provider.id) }}"
           onsubmit="return confirm('Remove {{ provider.full_name }} and all their certification records? This cannot be undone.');">
       <button type="submit" class="button-danger">Delete Provider</button>

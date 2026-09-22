@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Merge {{ source.full_name }}{% endblock %}
+{% block content %}
+
+<h1>Merge Duplicate Provider</h1>
+
+<p>
+  Use this when the same person ended up as two separate records — usually
+  because their name didn't match closely enough between DSHS, NREMT, and
+  manual entries for the automatic matching to link them up on its own.
+</p>
+
+<p class="note-box">
+  <strong>{{ source.full_name }}</strong> ({{ source.agency.name }}) has
+  {{ source.certifications|length }} certification(s) on file. Picking a
+  target below will move all of them onto that record, fill in any
+  missing contact info the target doesn't already have, and then
+  <strong>delete this record</strong>. This cannot be undone — double
+  check you're merging the right two people before submitting.
+</p>
+
+{% if source.certifications %}
+<h2>Certifications that will move</h2>
+<ul>
+  {% for cert in source.certifications %}
+  <li>{{ cert.cert_type.name }} {% if cert.certificate_number %}(#{{ cert.certificate_number }}){% endif %}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<form method="post" class="stacked-form">
+  <label>Merge into
+    <select name="target_id" required>
+      <option value="">Select the correct record…</option>
+      {% for p in other_providers %}
+      <option value="{{ p.id }}">{{ p.full_name }} — {{ p.agency.name }}{% if p.certifications %} ({{ p.certifications|length }} cert(s)){% endif %}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit" class="button-danger">Merge and Delete {{ source.full_name }}</button>
+</form>
+
+<p><a class="button-link" href="{{ url_for('main.provider_detail', provider_id=source.id) }}">Cancel</a></p>
+
+{% endblock %}

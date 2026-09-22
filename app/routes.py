@@ -13,6 +13,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import or_
 
 from app import db
+from app.matching import merge_providers
 from app.models import (
     Agency,
     Certification,
@@ -221,6 +222,42 @@ def provider_delete(provider_id):
     db.session.commit()
     flash(f"Removed {name}.", "success")
     return redirect(url_for("main.dashboard"))
+
+
+@main_bp.route("/providers/<int:provider_id>/merge", methods=["GET", "POST"])
+@login_required
+def provider_merge(provider_id):
+    source = db.get_or_404(Provider, provider_id)
+    other_providers = (
+        Provider.query.filter(Provider.id != source.id)
+        .order_by(Provider.last_name, Provider.first_name)
+        .all()
+    )
+
+    if request.method == "POST":
+        target_id = request.form.get("target_id", type=int)
+        target = db.session.get(Provider, target_id) if target_id else None
+        if not target:
+            flash("Choose which record to merge into.", "danger")
+            return redirect(url_for("main.provider_merge", provider_id=source.id))
+
+        source_name, target_name = source.full_name, target.full_name
+        stats = merge_providers(source, target)
+
+        summary = (
+            f"Merged {source_name} into {target_name}: "
+            f"{stats['certs_moved']} certification(s) moved"
+        )
+        if stats["certs_skipped_duplicate"]:
+            summary += f", {stats['certs_skipped_duplicate']} duplicate(s) dropped"
+        if stats["fields_backfilled"]:
+            summary += f", {stats['fields_backfilled']} contact field(s) filled in"
+        flash(summary + ".", "success")
+        return redirect(url_for("main.provider_detail", provider_id=target.id))
+
+    return render_template(
+        "provider_merge.html", source=source, other_providers=other_providers
+    )
 
 
 # ---- Certifications ----
