@@ -119,6 +119,7 @@ def export_csv():
             "Agency", "Last Name", "First Name", "Employee ID", "Rank/Title",
             "Certification", "Certificate Number", "Source", "Issue Date",
             "Expiration Date", "Days Until Expiration", "Status", "Last Verified",
+            "Direct Verify Link",
         ]
     )
     certs = Certification.query.join(Provider).order_by(
@@ -140,6 +141,7 @@ def export_csv():
                 c.days_until_expiration() if c.expiration_date else "",
                 STATUS_LABELS.get(c.status(), ""),
                 c.last_verified_date.isoformat() if c.last_verified_date else "",
+                c.direct_verify_url or "",
             ]
         )
     return Response(
@@ -234,6 +236,7 @@ def certification_new(provider_id):
         expiration_date=_parse_date(request.form.get("expiration_date")),
         source=request.form.get("source", "OTHER"),
         notes=request.form.get("notes", "").strip() or None,
+        direct_verify_url=request.form.get("direct_verify_url", "").strip() or None,
     )
     db.session.add(cert)
     db.session.commit()
@@ -251,6 +254,7 @@ def certification_edit(cert_id):
     cert.expiration_date = _parse_date(request.form.get("expiration_date"))
     cert.source = request.form.get("source", "OTHER")
     cert.notes = request.form.get("notes", "").strip() or None
+    cert.direct_verify_url = request.form.get("direct_verify_url", "").strip() or None
     db.session.commit()
     flash("Certification updated.", "success")
     return redirect(url_for("main.provider_detail", provider_id=cert.provider_id))

@@ -60,9 +60,13 @@
       </td>
       <td>{{ cert.last_verified_date.strftime('%m/%d/%Y') if cert.last_verified_date else 'Never' }}</td>
       <td class="cert-actions">
+        <input type="url" name="direct_verify_url" form="cert-edit-{{ cert.id }}"
+               value="{{ cert.direct_verify_url or '' }}" placeholder="Direct record link (optional)"
+               title="Paste the direct link to this person's record on DSHS/NREMT after you've looked them up once, so this becomes a one-click check next time."
+               size="16">
         <button type="submit" form="cert-edit-{{ cert.id }}">Save</button>
         {% if cert.verify_url() %}
-        <a class="button-link" target="_blank" rel="noopener" href="{{ cert.verify_url() }}" title="Look this person up on the official site, then click Verified below">Check on {{ sources[cert.source].label }} ↗</a>
+        <a class="button-link" target="_blank" rel="noopener" href="{{ cert.verify_url() }}" title="{{ 'Jump straight to this record' if cert.direct_verify_url else 'Look this person up on the official site, then click Verified below' }}">Check on {{ sources[cert.source].label }} ↗</a>
         {% endif %}
         <form method="post" action="{{ url_for('main.certification_verify', cert_id=cert.id) }}" class="inline-form">
           <button type="submit" class="button-secondary" title="Mark that you confirmed this today">Verified Today</button>
@@ -98,6 +102,7 @@
   </label>
   <label>Issue Date<input type="date" name="issue_date"></label>
   <label>Expiration Date<input type="date" name="expiration_date"></label>
+  <label>Direct Record Link (optional)<input type="url" name="direct_verify_url" placeholder="https://vo.ras.dshs.state.tx.us/datamart/detailsTXRAS.do?anchor=..."></label>
   <label class="notes-label">Notes<textarea name="notes" rows="2"></textarea></label>
   <button type="submit">Add Certification</button>
 </form>

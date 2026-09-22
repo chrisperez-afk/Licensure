@@ -124,6 +124,13 @@ class Certification(db.Model):
     last_verified_date = db.Column(db.Date)
     notes = db.Column(db.Text)
 
+    # A bookmarked link straight to this person's record on the issuing
+    # site (e.g. a Texas DSHS datamart "detailsTXRAS.do?anchor=..." URL),
+    # captured after looking them up once. Overrides the generic search
+    # link below when present, so "Check on DSHS/NREMT" jumps straight to
+    # their record instead of the search form.
+    direct_verify_url = db.Column(db.String(500))
+
     def days_until_expiration(self):
         if not self.expiration_date:
             return None
@@ -144,4 +151,4 @@ class Certification(db.Model):
         return STATUS_CURRENT
 
     def verify_url(self):
-        return VERIFICATION_SOURCES.get(self.source, {}).get("url")
+        return self.direct_verify_url or VERIFICATION_SOURCES.get(self.source, {}).get("url")

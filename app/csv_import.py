@@ -14,7 +14,7 @@ REQUIRED_COLUMNS = ["first_name", "last_name", "agency"]
 OPTIONAL_COLUMNS = [
     "employee_id", "rank_title", "email", "phone",
     "certification", "certificate_number", "source",
-    "issue_date", "expiration_date",
+    "issue_date", "expiration_date", "direct_verify_url",
 ]
 
 TEMPLATE_HEADER = REQUIRED_COLUMNS + OPTIONAL_COLUMNS
@@ -157,6 +157,9 @@ def import_csv():
                 expiration_date = _parse_date(row.get("expiration_date"))
                 if expiration_date:
                     cert.expiration_date = expiration_date
+                direct_verify_url = (row.get("direct_verify_url") or "").strip()
+                if direct_verify_url:
+                    cert.direct_verify_url = direct_verify_url
 
         db.session.commit()
 
