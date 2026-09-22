@@ -52,6 +52,11 @@ class Agency(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), unique=True, nullable=False)
 
+    # The agency's own DSHS provider page (the one with the "Related Party
+    # Name" roster on it), so the nightly fetch knows which page to pull for
+    # this agency. Set once per agency in Settings.
+    dshs_roster_url = db.Column(db.String(500), nullable=True)
+
     providers = db.relationship(
         "Provider", back_populates="agency", cascade="all, delete-orphan"
     )

@@ -22,3 +22,5 @@ services:
         value: "90"
       - key: CRITICAL_DAYS
         value: "30"
+      - key: NIGHTLY_SYNC_TOKEN
+        generateValue: true

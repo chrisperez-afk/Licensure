@@ -30,6 +30,38 @@ Re-run this any time you want a refresh — weekly, monthly, whatever fits
 your credentialing cycle. It's the primary way to keep the dashboard
 current for Texas certifications.
 
+### Automatic nightly DSHS sync (no copy/paste)
+
+Since that DSHS page is public and needs no login, the app can fetch it
+directly over HTTP instead of you copying and pasting it every time:
+
+1. In **Settings**, paste your agency's DSHS provider page URL into the
+   "DSHS provider page URL for nightly fetch" field and save it.
+2. On the **Sync DSHS Roster** page, a **Fetch Now** button appears for
+   that agency — use it to pull and sync immediately, same result as a
+   paste, just without the copy/paste step.
+3. To also run this automatically every night, set the `NIGHTLY_SYNC_TOKEN`
+   environment variable (Render's Blueprint already generates one for you —
+   find it under your service's **Environment** tab), then set up a free
+   account at a cron-ping service like [cron-job.org](https://cron-job.org)
+   to hit this URL once a night:
+
+   ```
+   https://<your-app>.onrender.com/import/dshs-roster/nightly-sync?token=<your NIGHTLY_SYNC_TOKEN>
+   ```
+
+   That request is what actually triggers the sync — Render's free tier
+   puts the app to sleep when idle, and only an incoming request (like this
+   one) wakes it back up, so there's no way for the app to reliably wake
+   itself up on a schedule. The endpoint refuses any request without the
+   correct token, and there's no login involved since a scheduled ping has
+   no browser session.
+
+This isn't a replacement for the copy/paste flow — DSHS could change their
+page layout at any time, which would break the automatic fetch without
+warning. If nightly sync stops finding people it used to find, paste-and-
+sync still works as a fallback while that gets looked at.
+
 NREMT doesn't have a page like that, but it does let you export a roster
 of everyone certified under your agency from your NREMT organization
 account (Name / EMS ID / Registry # / Status / Level / Recert Cycle

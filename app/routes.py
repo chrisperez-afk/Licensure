@@ -384,6 +384,20 @@ def agency_delete(agency_id):
     return redirect(url_for("main.settings"))
 
 
+@main_bp.route("/settings/agencies/<int:agency_id>/dshs-url", methods=["POST"])
+@login_required
+def agency_set_dshs_url(agency_id):
+    agency = db.get_or_404(Agency, agency_id)
+    url = request.form.get("dshs_roster_url", "").strip()
+    agency.dshs_roster_url = url or None
+    db.session.commit()
+    if url:
+        flash(f"Saved DSHS roster URL for '{agency.name}'.", "success")
+    else:
+        flash(f"Cleared DSHS roster URL for '{agency.name}'.", "success")
+    return redirect(url_for("main.settings"))
+
+
 @main_bp.route("/settings/normalize-names", methods=["POST"])
 @login_required
 def normalize_names():

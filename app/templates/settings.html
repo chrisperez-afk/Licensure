@@ -13,6 +13,11 @@
           onsubmit="return confirm('Delete {{ a.name }}{% if a.providers %} and all {{ a.providers|length }} of its provider(s) and their certifications{% endif %}? This cannot be undone.');">
       <button type="submit" class="button-danger">Delete</button>
     </form>
+    <form method="post" action="{{ url_for('main.agency_set_dshs_url', agency_id=a.id) }}" class="inline-form">
+      <input type="url" name="dshs_roster_url" value="{{ a.dshs_roster_url or '' }}"
+             placeholder="DSHS provider page URL for nightly fetch" style="width: 22rem;">
+      <button type="submit" class="button-secondary">Save DSHS URL</button>
+    </form>
   </li>
   {% endfor %}
 </ul>

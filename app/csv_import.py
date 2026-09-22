@@ -1,11 +1,14 @@
 import csv
 import io
+import os
+import secrets
 from datetime import datetime
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, Response, abort, flash, redirect, render_template, request, url_for
 from flask_login import login_required
 
 from app import db
+from app.dshs_fetch import fetch_and_sync_dshs_roster
 from app.dshs_roster import parse_dshs_roster, sync_dshs_roster
 from app.matching import find_matching_providers_in
 from app.models import Agency, Certification, CertificationType, Provider
@@ -250,6 +253,35 @@ def dshs_roster():
     return render_template("dshs_roster_import.html", agencies=agencies)
 
 
+@csv_bp.route("/dshs-roster/<int:agency_id>/fetch-now", methods=["POST"])
+@login_required
+def dshs_roster_fetch_now(agency_id):
+    agency = db.get_or_404(Agency, agency_id)
+
+    try:
+        stats, skipped = fetch_and_sync_dshs_roster(agency)
+    except ValueError as exc:
+        flash(str(exc), "danger")
+        return redirect(url_for("csv_import.dshs_roster"))
+
+    summary = (
+        f"Fetched DSHS directly for {agency.name}: "
+        f"{stats['providers_created']} new provider(s), "
+        f"{stats['certs_created']} new certification(s), "
+        f"{stats['certs_updated']} existing certification(s) refreshed "
+        f"and marked verified today."
+    )
+    flash(summary, "success")
+    if skipped:
+        flash(
+            f"{skipped} line(s) on the fetched page looked like a credential row "
+            f"but didn't fully match the expected pattern, and were skipped.",
+            "warning",
+        )
+
+    return redirect(url_for("main.dashboard"))
+
+
 @csv_bp.route("/nremt-roster", methods=["GET", "POST"])
 @login_required
 def nremt_roster():
@@ -351,3 +383,40 @@ def shift_roster():
         return redirect(url_for("main.dashboard"))
 
     return render_template("shift_roster_import.html", agencies=agencies)
+
+
+@csv_bp.route("/dshs-roster/nightly-sync", methods=["GET", "POST"])
+def dshs_roster_nightly_sync():
+    """Meant to be hit once a night by an external free cron-ping service
+    (e.g. cron-job.org), not a person — no login, since a scheduled ping
+    has no browser session to log in with. Protected instead by a shared
+    secret token in the query string, set via the NIGHTLY_SYNC_TOKEN
+    environment variable. No token configured means nightly sync is off:
+    this always refuses rather than ever running unauthenticated.
+
+    Runs every agency that has a DSHS roster URL saved in Settings, and
+    keeps going even if one agency's fetch fails, so one bad URL doesn't
+    block the others. Returns a plain-text summary line per agency.
+    """
+    expected_token = os.environ.get("NIGHTLY_SYNC_TOKEN")
+    provided_token = request.args.get("token", "")
+    if not expected_token or not secrets.compare_digest(provided_token, expected_token):
+        abort(403)
+
+    agencies = Agency.query.filter(Agency.dshs_roster_url.isnot(None)).order_by(Agency.name).all()
+    if not agencies:
+        return Response("No agency has a DSHS roster URL configured.\n", mimetype="text/plain")
+
+    lines = []
+    for agency in agencies:
+        try:
+            stats, skipped = fetch_and_sync_dshs_roster(agency)
+            lines.append(
+                f"{agency.name}: OK - {stats['providers_created']} new provider(s), "
+                f"{stats['certs_created']} new cert(s), {stats['certs_updated']} refreshed, "
+                f"{skipped} skipped line(s)."
+            )
+        except ValueError as exc:
+            lines.append(f"{agency.name}: FAILED - {exc}")
+
+    return Response("\n".join(lines) + "\n", mimetype="text/plain")

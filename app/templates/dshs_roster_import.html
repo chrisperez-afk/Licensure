@@ -33,4 +33,27 @@
   <button type="submit">Parse &amp; Sync</button>
 </form>
 
+<h2>Fetch Directly (no copy/paste)</h2>
+<p>
+  If an agency has a DSHS roster URL saved in <a href="{{ url_for('main.settings') }}">Settings</a>,
+  the app can pull that page itself instead of you copying and pasting it.
+  This also runs automatically every night if a nightly sync is configured
+  (see the README).
+</p>
+<ul>
+  {% for a in agencies %}
+  {% if a.dshs_roster_url %}
+  <li>
+    {{ a.name }}
+    <form method="post" action="{{ url_for('csv_import.dshs_roster_fetch_now', agency_id=a.id) }}" class="inline-form">
+      <button type="submit">Fetch Now</button>
+    </form>
+  </li>
+  {% endif %}
+  {% endfor %}
+  {% if not agencies|selectattr('dshs_roster_url')|list %}
+  <li class="muted">No agency has a DSHS roster URL saved yet. Add one in Settings to enable this.</li>
+  {% endif %}
+</ul>
+
 {% endblock %}
