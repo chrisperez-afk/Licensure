@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Sync Shift Roster{% endblock %}
+{% block content %}
+
+<h1>Sync Shift Roster</h1>
+
+<p>
+  Upload the staffing/HR system's roster export to set everyone's shift
+  in one shot. Matched by Employee ID where available, and by name
+  otherwise (so this also lines up with people already added via the
+  DSHS/NREMT syncs) &mdash; safe to re-upload any time the roster changes,
+  it updates existing people rather than duplicating them, and creates
+  anyone not already in the system.
+</p>
+
+<form method="post" enctype="multipart/form-data" class="stacked-form">
+  <label>Agency
+    <select name="agency_id" required>
+      {% for a in agencies %}
+      <option value="{{ a.id }}">{{ a.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Roster File (.xls export)
+    <input type="file" name="roster_file" accept=".xls,.xlsx,.html" required>
+  </label>
+  <button type="submit">Upload &amp; Sync</button>
+</form>
+
+{% endblock %}

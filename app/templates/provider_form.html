@@ -15,6 +15,12 @@
     </select>
   </label>
   <label>Employee ID<input type="text" name="employee_id" value="{{ provider.employee_id if provider else '' }}"></label>
+  <label>Shift
+    <input type="text" name="shift" list="shift-options" value="{{ provider.shift if provider else '' }}">
+    <datalist id="shift-options">
+      <option value="A"><option value="B"><option value="C"><option value="ADMIN">
+    </datalist>
+  </label>
   <label>Rank / Title<input type="text" name="rank_title" value="{{ provider.rank_title if provider else '' }}"></label>
   <label>Email<input type="email" name="email" value="{{ provider.email if provider else '' }}"></label>
   <label>Phone<input type="text" name="phone" value="{{ provider.phone if provider else '' }}"></label>

@@ -46,6 +46,7 @@ def index():
 def dashboard():
     agency_id = request.args.get("agency_id", type=int)
     cert_type_id = request.args.get("cert_type_id", type=int)
+    shift_filter = request.args.get("shift", "").strip()
     status_filter = request.args.get("status")
     search = request.args.get("q", "").strip()
     show_inactive = request.args.get("show_inactive") == "1"
@@ -56,6 +57,8 @@ def dashboard():
         query = query.filter(Provider.agency_id == agency_id)
     if cert_type_id:
         query = query.filter(Certification.cert_type_id == cert_type_id)
+    if shift_filter:
+        query = query.filter(Provider.shift == shift_filter)
     if not show_inactive:
         query = query.filter(Provider.active.is_(True))
     if search:
@@ -91,6 +94,14 @@ def dashboard():
 
     agencies = Agency.query.order_by(Agency.name).all()
     cert_types = CertificationType.query.order_by(CertificationType.name).all()
+    shifts = [
+        row[0]
+        for row in db.session.query(Provider.shift)
+        .filter(Provider.shift.isnot(None))
+        .distinct()
+        .order_by(Provider.shift)
+        .all()
+    ]
 
     return render_template(
         "dashboard.html",
@@ -99,8 +110,10 @@ def dashboard():
         status_labels=STATUS_LABELS,
         agencies=agencies,
         cert_types=cert_types,
+        shifts=shifts,
         agency_id=agency_id,
         cert_type_id=cert_type_id,
+        shift_filter=shift_filter,
         status_filter=status_filter,
         search=search,
         show_inactive=show_inactive,
@@ -117,7 +130,7 @@ def export_csv():
     writer = csv.writer(output)
     writer.writerow(
         [
-            "Agency", "Last Name", "First Name", "Employee ID", "Rank/Title",
+            "Agency", "Last Name", "First Name", "Employee ID", "Shift", "Rank/Title",
             "Certification", "Certificate Number", "Source", "Issue Date",
             "Expiration Date", "Days Until Expiration", "Status", "Last Verified",
             "Direct Verify Link", "Notes",
@@ -133,6 +146,7 @@ def export_csv():
                 c.provider.last_name,
                 c.provider.first_name,
                 c.provider.employee_id or "",
+                c.provider.shift or "",
                 c.provider.rank_title or "",
                 c.cert_type.name,
                 c.certificate_number or "",
@@ -166,6 +180,7 @@ def provider_new():
             first_name=request.form["first_name"].strip(),
             last_name=request.form["last_name"].strip(),
             employee_id=request.form.get("employee_id", "").strip() or None,
+            shift=request.form.get("shift", "").strip() or None,
             rank_title=request.form.get("rank_title", "").strip() or None,
             email=request.form.get("email", "").strip() or None,
             phone=request.form.get("phone", "").strip() or None,
@@ -202,6 +217,7 @@ def provider_edit(provider_id):
         provider.first_name = request.form["first_name"].strip()
         provider.last_name = request.form["last_name"].strip()
         provider.employee_id = request.form.get("employee_id", "").strip() or None
+        provider.shift = request.form.get("shift", "").strip() or None
         provider.rank_title = request.form.get("rank_title", "").strip() or None
         provider.email = request.form.get("email", "").strip() or None
         provider.phone = request.form.get("phone", "").strip() or None

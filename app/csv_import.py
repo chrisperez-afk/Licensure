@@ -10,12 +10,13 @@ from app.dshs_roster import parse_dshs_roster, sync_dshs_roster
 from app.matching import find_matching_providers_in
 from app.models import Agency, Certification, CertificationType, Provider
 from app.nremt_roster import parse_nremt_roster, sync_nremt_roster
+from app.shift_roster import parse_shift_roster, sync_shift_roster
 
 csv_bp = Blueprint("csv_import", __name__, url_prefix="/import")
 
 REQUIRED_COLUMNS = ["first_name", "last_name", "agency"]
 OPTIONAL_COLUMNS = [
-    "employee_id", "rank_title", "email", "phone",
+    "employee_id", "shift", "rank_title", "email", "phone",
     "certification", "certificate_number", "source",
     "issue_date", "expiration_date", "direct_verify_url",
 ]
@@ -45,9 +46,9 @@ def template():
     writer.writerow(TEMPLATE_HEADER)
     writer.writerow(
         [
-            "Jane", "Doe", "Bexar County 2 Fire Department", "1234", "Firefighter/Paramedic",
-            "jane.doe@example.com", "210-555-0100", "NREMT - Paramedic", "E123456",
-            "NREMT", "2023-01-15", "2027-01-15",
+            "Jane", "Doe", "Bexar County 2 Fire Department", "1234", "A",
+            "Firefighter/Paramedic", "jane.doe@example.com", "210-555-0100",
+            "NREMT - Paramedic", "E123456", "NREMT", "2023-01-15", "2027-01-15", "",
         ]
     )
     return Response(
@@ -129,6 +130,9 @@ def import_csv():
             employee_id = (row.get("employee_id") or "").strip()
             if employee_id:
                 provider.employee_id = employee_id
+            shift = (row.get("shift") or "").strip()
+            if shift:
+                provider.shift = shift
             rank_title = (row.get("rank_title") or "").strip()
             if rank_title:
                 provider.rank_title = rank_title
@@ -296,3 +300,51 @@ def nremt_roster():
         return redirect(url_for("main.dashboard"))
 
     return render_template("nremt_roster_import.html", agencies=agencies)
+
+
+@csv_bp.route("/shift-roster", methods=["GET", "POST"])
+@login_required
+def shift_roster():
+    agencies = Agency.query.order_by(Agency.name).all()
+
+    if request.method == "POST":
+        agency_id = request.form.get("agency_id", type=int)
+        file = request.files.get("roster_file")
+
+        agency = db.session.get(Agency, agency_id) if agency_id else None
+        if not agency:
+            flash("Choose which agency this roster belongs to.", "danger")
+            return redirect(url_for("csv_import.shift_roster"))
+
+        if not file or file.filename == "":
+            flash("Choose the shift roster file to upload.", "danger")
+            return redirect(url_for("csv_import.shift_roster"))
+
+        try:
+            records, skipped = parse_shift_roster(file.stream)
+        except ValueError as exc:
+            flash(str(exc), "danger")
+            return redirect(url_for("csv_import.shift_roster"))
+
+        if not records:
+            flash(
+                "Couldn't find any personnel rows in that file. Make sure it's "
+                "the roster export with Employee Name/Home Cost Center columns.",
+                "danger",
+            )
+            return redirect(url_for("csv_import.shift_roster"))
+
+        stats = sync_shift_roster(records, agency)
+
+        summary = (
+            f"Synced shifts for {len(records)} record(s) for {agency.name}: "
+            f"{stats['providers_created']} new provider(s), "
+            f"{stats['providers_updated']} existing provider(s) updated."
+        )
+        flash(summary, "success")
+        if skipped:
+            flash(f"{skipped} row(s) in the file had no usable name and were skipped.", "warning")
+
+        return redirect(url_for("main.dashboard"))
+
+    return render_template("shift_roster_import.html", agencies=agencies)

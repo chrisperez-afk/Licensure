@@ -83,6 +83,10 @@ class Provider(db.Model):
     phone = db.Column(db.String(40))
     active = db.Column(db.Boolean, default=True, nullable=False)
 
+    # Free text, not a fixed A/B/C enum — the department's own shift
+    # roster export also has values like "ADMIN" and "SMART".
+    shift = db.Column(db.String(20))
+
     # NREMT's own per-person identifier (stable across name changes and
     # credential level upgrades, unlike a certificate number). Backfilled
     # automatically the first time someone is matched during an NREMT

@@ -20,6 +20,21 @@ def _normalize_first_name(first_name):
     return re.sub(r"[.,]", "", (first_name or "").strip()).lower()
 
 
+def _first_names_match(a, b):
+    """Exact match, or one source's first name is a truncated version of
+    the other's — e.g. an HR export with "MORGAN" for someone DSHS/NREMT
+    list under "MORGAN BRADFORD". Matches on the first word only, so this
+    doesn't require the middle name/initial to line up, just the actual
+    first name."""
+    a = _normalize_first_name(a)
+    b = _normalize_first_name(b)
+    if a == b:
+        return True
+    a_first = a.split()[0] if a else ""
+    b_first = b.split()[0] if b else ""
+    return bool(a_first) and a_first == b_first
+
+
 def find_matching_providers_in(first_name, last_name, candidates):
     """Case- and suffix-insensitive match against an already-fetched list
     of providers — no database query of its own. Use this (fetching the
@@ -29,13 +44,12 @@ def find_matching_providers_in(first_name, last_name, candidates):
     which is slow in general and, on a memory-constrained host, can run
     the process out of memory outright rather than just being slow."""
     target_last = _normalize_last_name(last_name)
-    target_first = _normalize_first_name(first_name)
 
     return [
         candidate
         for candidate in candidates
         if _normalize_last_name(candidate.last_name) == target_last
-        and _normalize_first_name(candidate.first_name) == target_first
+        and _first_names_match(candidate.first_name, first_name)
     ]
 
 

@@ -7,6 +7,7 @@
     <h1>{{ provider.full_name }}{% if not provider.active %} <span class="badge status-expired">Inactive</span>{% endif %}</h1>
     <p class="muted">
       {{ provider.agency.name }}
+      {% if provider.shift %} · Shift {{ provider.shift }}{% endif %}
       {% if provider.rank_title %} · {{ provider.rank_title }}{% endif %}
       {% if provider.employee_id %} · ID {{ provider.employee_id }}{% endif %}
     </p>

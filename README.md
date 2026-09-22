@@ -74,6 +74,32 @@ fresh on each page load — rather than a sync-and-store model, since
 (unlike DSHS/NREMT) there'd be an actual API to call. That's not built
 yet; ask for it once you have credentials to work with.
 
+### Shift tracking
+
+Every provider has a **Shift** field (free text — "A", "B", "C", "ADMIN",
+whatever your department actually uses, not a fixed list), filterable
+and shown as a column on the Dashboard.
+
+**Sync Shift Roster** takes the export from the department's staffing/HR
+system directly (the "Employee ID / Employee Name / Home Cost Center /
+Email Address / ..." file — "Home Cost Center" is where the shift value
+actually lives in that export). Upload it and it sets everyone's shift in
+one shot, matched by Employee ID where the system already has one, and by
+name otherwise — including lining up with people already added via DSHS
+or NREMT, even when this system's names don't quite match those (it
+truncates middle names, e.g. "MORGAN" here vs "MORGAN BRADFORD" from
+DSHS; matching allows for that). Safe to re-upload any time the roster
+changes.
+
+One real quirk from that HR system, handled deliberately: when it has two
+people with the same name, it disambiguates its own records by appending
+a digit to the second person's last name (e.g. a second "Adrian Garza"
+shows up as "GARZA2, ADRIAN"). The sync strips that back to the real last
+name and uses each person's distinct Employee ID to keep them as two
+separate people instead of colliding into one — the same real scenario
+the DSHS/NREMT syncs already had to handle for a name collision of their
+own.
+
 ## Setup
 
 ```bash
