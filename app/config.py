@@ -4,11 +4,19 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def _normalize_database_url(url):
+    # Some hosted Postgres providers hand out "postgres://" connection
+    # strings, but SQLAlchemy 2.x only recognizes the "postgresql://" scheme.
+    if url and url.startswith("postgres://"):
+        return "postgresql://" + url[len("postgres://"):]
+    return url
+
+
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "dev-only-insecure-key")
-    SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DATABASE_URL", f"sqlite:///{BASE_DIR / 'instance' / 'licensure.db'}"
-    )
+    SQLALCHEMY_DATABASE_URI = _normalize_database_url(
+        os.environ.get("DATABASE_URL")
+    ) or f"sqlite:///{BASE_DIR / 'instance' / 'licensure.db'}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     WARNING_DAYS = int(os.environ.get("WARNING_DAYS", 90))

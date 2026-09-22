@@ -82,6 +82,57 @@ To add another login (e.g. for another officer doing credentialing):
 flask create-user jsmith
 ```
 
+## Deploy a real website (free)
+
+Running it on your own machine only puts it on your local network. To get
+a real URL that works from anywhere — your phone, another station, home —
+deploy it to [Render](https://render.com), which hosts it for free and
+redeploys automatically whenever this GitHub repo updates.
+
+You'll also want a database that persists independently of the web
+service (Render's own free web service disk isn't guaranteed to survive
+restarts). Any of these give you a free Postgres database and a
+connection string to paste into Render — pick whichever you're
+comfortable signing up for, and check their current free-tier terms
+since they do change:
+
+- [Render Postgres](https://render.com/docs/databases) (same dashboard as
+  the web service, simplest to set up)
+- [Neon](https://neon.tech) (serverless Postgres, generous free tier)
+- [Supabase](https://supabase.com) (Postgres + extras, generous free tier)
+
+Steps:
+
+1. Sign up at [render.com](https://render.com) (free, no card required
+   for the web service) and connect your GitHub account.
+2. Set up a Postgres database with one of the options above and copy its
+   connection string (starts with `postgres://` or `postgresql://`).
+3. In Render, click **New > Blueprint**, pick this repository
+   (`chrisperez-afk/licensure`). Render reads `render.yaml` in this repo
+   and sets up the web service automatically.
+4. Render will prompt you to fill in a few values it left blank on
+   purpose (so nothing sensitive is stored in the repo itself):
+   - `DATABASE_URL` — the Postgres connection string from step 2
+   - `ADMIN_PASSWORD` — the password for your login on the live site
+   - `ADMIN_EMAIL` — your email (optional)
+   - `SECRET_KEY` is generated for you automatically
+5. Deploy. That's it — no shell commands, no manual database setup. The
+   app creates its tables, default agencies/certification types, and your
+   admin login automatically the first time it starts.
+6. Once it's live, open the `.onrender.com` URL Render gives you and log
+   in with the username `admin` and the password you set in step 4.
+
+A couple of things worth knowing about the free tier: the service goes to
+sleep after 15 minutes with no traffic, so the first visit after a quiet
+stretch takes 30–60 seconds to wake up — normal, not broken. And since
+this app holds real PII (names, certificate numbers), don't share the
+login with anyone outside the department, and treat `ADMIN_PASSWORD` like
+any other credential.
+
+To add another login for someone else once it's deployed, open the
+**Shell** tab on the Render service and run `flask create-user jsmith`
+the same as you would locally.
+
 ## Day-to-day use
 
 1. **Sync DSHS Roster** and **Sync NREMT Roster** first — together these
@@ -108,21 +159,32 @@ Set in `.env` (see `.env.example`):
 
 - `SECRET_KEY` — random string for session signing. Required in production.
 - `DATABASE_URL` — defaults to a local SQLite file at `instance/licensure.db`.
+  Accepts a Postgres connection string too (`postgres://` or
+  `postgresql://`) for a hosted deployment.
 - `WARNING_DAYS` / `CRITICAL_DAYS` — thresholds (in days) for the
   yellow/orange color coding. Defaults: 90 and 30.
-- `ADMIN_USERNAME` / `ADMIN_PASSWORD` / `ADMIN_EMAIL` — used once by
-  `flask seed-admin` to create the first login.
+- `ADMIN_USERNAME` / `ADMIN_PASSWORD` / `ADMIN_EMAIL` — if `ADMIN_PASSWORD`
+  is set, that login is created automatically the first time the app
+  starts (and left alone on every start after that) — no manual step
+  needed, whether running locally or hosted.
 
 ## Notes on running this for real
 
-- This is a small Flask + SQLite app meant to run on one machine on your
-  local network (a station PC, a small server, etc). For anything beyond a
-  handful of concurrent users, put it behind a real WSGI server (gunicorn)
-  and a reverse proxy (nginx) instead of Flask's dev server.
-- The SQLite database (`instance/licensure.db`) contains provider names,
-  contact info, and certification numbers — back it up regularly and treat
-  it like the PII it is. It's excluded from git via `.gitignore`.
+- Locally, this runs as a small Flask + SQLite app on one machine (a
+  station PC, a small server). Hosted (see "Deploy a real website" above),
+  it runs under gunicorn against Postgres instead — same codebase, no
+  changes needed on your end beyond the environment variables.
+- Whichever database you're using contains provider names, contact info,
+  and certification numbers — back it up regularly and treat it like the
+  PII it is. A local SQLite file is excluded from git via `.gitignore`;
+  a hosted Postgres database should have its own backup/retention plan
+  through whichever provider you chose.
 - There is currently no automated email/text alerting; the dashboard is
   pull-based (someone checks it). If you want push alerts (e.g. a weekly
-  email digest of what's expiring), that can be added as a scheduled script
+  email digest of what's expiring), that can be added as a scheduled job
   using the same database — ask and it can be built next.
+- There's no schema migration tool set up yet (just `db.create_all()`,
+  which only creates missing tables, not new columns on existing ones).
+  Fine for now since this is early days with no real production data at
+  stake; worth adding (Flask-Migrate) before the schema changes again
+  after real data has accumulated.

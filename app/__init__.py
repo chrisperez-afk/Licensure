@@ -35,10 +35,14 @@ def create_app(config_class=Config):
     app.register_blueprint(main_bp)
     app.register_blueprint(csv_bp)
 
-    from app.cli import register_cli
+    from app.cli import register_cli, seed_admin_if_configured, seed_defaults
     register_cli(app)
 
     from app.template_helpers import register_template_helpers
     register_template_helpers(app)
+
+    with app.app_context():
+        seed_defaults()
+        seed_admin_if_configured()
 
     return app
