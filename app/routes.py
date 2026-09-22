@@ -14,6 +14,7 @@ from sqlalchemy import or_
 
 from app import db
 from app.matching import merge_providers
+from app.name_format import titlecase_name
 from app.models import (
     Agency,
     Certification,
@@ -177,8 +178,8 @@ def provider_new():
     agencies = Agency.query.order_by(Agency.name).all()
     if request.method == "POST":
         provider = Provider(
-            first_name=request.form["first_name"].strip(),
-            last_name=request.form["last_name"].strip(),
+            first_name=titlecase_name(request.form["first_name"].strip()),
+            last_name=titlecase_name(request.form["last_name"].strip()),
             employee_id=request.form.get("employee_id", "").strip() or None,
             shift=request.form.get("shift", "").strip() or None,
             rank_title=request.form.get("rank_title", "").strip() or None,
@@ -214,8 +215,8 @@ def provider_edit(provider_id):
     provider = db.get_or_404(Provider, provider_id)
     agencies = Agency.query.order_by(Agency.name).all()
     if request.method == "POST":
-        provider.first_name = request.form["first_name"].strip()
-        provider.last_name = request.form["last_name"].strip()
+        provider.first_name = titlecase_name(request.form["first_name"].strip())
+        provider.last_name = titlecase_name(request.form["last_name"].strip())
         provider.employee_id = request.form.get("employee_id", "").strip() or None
         provider.shift = request.form.get("shift", "").strip() or None
         provider.rank_title = request.form.get("rank_title", "").strip() or None
@@ -380,4 +381,26 @@ def agency_delete(agency_id):
     db.session.delete(agency)
     db.session.commit()
     flash(f"Removed agency '{name}' and its {provider_count} provider(s).", "success")
+    return redirect(url_for("main.settings"))
+
+
+@main_bp.route("/settings/normalize-names", methods=["POST"])
+@login_required
+def normalize_names():
+    """One-time cleanup for names already stored before titlecase_name()
+    was applied at every import/entry point — new records are normalized
+    going in, but this fixes names that reached the database before that."""
+    changed = 0
+    for provider in Provider.query.all():
+        new_first = titlecase_name(provider.first_name)
+        new_last = titlecase_name(provider.last_name)
+        if new_first != provider.first_name or new_last != provider.last_name:
+            provider.first_name = new_first
+            provider.last_name = new_last
+            changed += 1
+    db.session.commit()
+    if changed:
+        flash(f"Normalized capitalization for {changed} provider name(s).", "success")
+    else:
+        flash("All provider names are already normalized.", "success")
     return redirect(url_for("main.settings"))

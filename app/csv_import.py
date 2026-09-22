@@ -9,6 +9,7 @@ from app import db
 from app.dshs_roster import parse_dshs_roster, sync_dshs_roster
 from app.matching import find_matching_providers_in
 from app.models import Agency, Certification, CertificationType, Provider
+from app.name_format import titlecase_name
 from app.nremt_roster import parse_nremt_roster, sync_nremt_roster
 from app.shift_roster import parse_shift_roster, sync_shift_roster
 
@@ -103,6 +104,8 @@ def import_csv():
             if not first_name or not last_name or not agency_name:
                 row_errors.append(f"Row {i}: missing first name, last name, or agency.")
                 continue
+            first_name = titlecase_name(first_name)
+            last_name = titlecase_name(last_name)
 
             agency = Agency.query.filter_by(name=agency_name).first()
             if not agency:

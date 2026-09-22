@@ -37,6 +37,17 @@
   <button type="submit">Add Certification Type</button>
 </form>
 
+<h2>Name Formatting</h2>
+<p class="muted">
+  Names entered or imported are now automatically formatted as "Last, First"
+  with standard capitalization. If you have existing providers with
+  inconsistent capitalization (e.g. from before this was added, or an ALL
+  CAPS import), run this once to clean them up.
+</p>
+<form method="post" action="{{ url_for('main.normalize_names') }}" class="inline-form">
+  <button type="submit">Normalize Name Capitalization</button>
+</form>
+
 <h2>Expiration Thresholds</h2>
 <p class="muted">
   Currently configured via the <code>WARNING_DAYS</code> and

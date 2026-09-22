@@ -100,6 +100,21 @@ separate people instead of colliding into one — the same real scenario
 the DSHS/NREMT syncs already had to handle for a name collision of their
 own.
 
+### Name formatting
+
+DSHS exports names in ALL CAPS, NREMT and the shift roster export them in
+Title Case, and manual entry could be anything. Every path that writes a
+provider's name — DSHS sync, NREMT sync, shift roster sync, manual Add/Edit
+Provider, and CSV import — now runs it through the same title-casing
+(handling `Mc`/`Mac`, apostrophes, and suffixes like Jr/Sr/II–V), so names
+display consistently as "Last, First" everywhere regardless of source.
+
+Existing providers added before this was in place can have the old,
+inconsistent capitalization. **Settings → Normalize Name Capitalization**
+retroactively re-applies the same formatting to every provider already in
+the database. It's safe to run more than once — it's a no-op once
+everything's already normalized.
+
 ## Setup
 
 ```bash

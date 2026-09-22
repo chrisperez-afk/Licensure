@@ -13,6 +13,7 @@ from datetime import date, datetime
 from app import db
 from app.matching import find_matching_providers_in
 from app.models import Certification, CertificationType, Provider
+from app.name_format import titlecase_name
 from app.xlsx_utils import load_workbook_safe
 
 EXPECTED_COLUMNS = [
@@ -92,6 +93,8 @@ def parse_nremt_roster(file_obj):
         if not last_name or not first_name:
             skipped += 1
             continue
+        last_name = titlecase_name(last_name)
+        first_name = titlecase_name(first_name)
 
         issue_date, expiration_date = _parse_cycle_dates(get("Recert Cycle"))
 

@@ -27,6 +27,7 @@ from datetime import date, datetime
 from app import db
 from app.matching import find_matching_providers_in
 from app.models import Certification, CertificationType, Provider
+from app.name_format import titlecase_name
 
 
 def _parse_date(value):
@@ -97,6 +98,8 @@ def parse_dshs_roster(text):
         if not last_name or not first_name:
             skipped += 1
             continue
+        last_name = titlecase_name(last_name)
+        first_name = titlecase_name(first_name)
 
         records.append(
             {

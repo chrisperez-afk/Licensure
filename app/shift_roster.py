@@ -13,6 +13,7 @@ from bs4 import BeautifulSoup
 from app import db
 from app.matching import find_matching_providers_in
 from app.models import Provider
+from app.name_format import titlecase_name
 
 EXPECTED_COLUMNS = ["Employee ID", "Employee Name", "Home Cost Center", "Email Address"]
 
@@ -82,6 +83,8 @@ def parse_shift_roster(file_obj):
         # storage — sync_shift_roster's employee-ID-aware matching is what
         # then keeps two such people distinct instead of collapsing them.
         last_name = re.sub(r"\d+$", "", last_name).strip() or last_name
+        last_name = titlecase_name(last_name)
+        first_name = titlecase_name(first_name)
 
         records.append(
             {
