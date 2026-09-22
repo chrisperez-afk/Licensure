@@ -1,9 +1,9 @@
 # EMS Licensure Dashboard
 
 Tracks EMS certification/licensure expiration dates for providers at Bexar
-County 2 Fire Department (and, optionally, Bergheim Volunteer Fire
-Department) — Texas DSHS EMS certifications, NREMT certifications, and any
-other credential you want to watch (CPR/BLS, ACLS, PALS, TCCC, PHTLS, etc).
+County 2 Fire Department — Texas DSHS EMS certifications, NREMT
+certifications, and any other credential you want to watch (CPR/BLS, ACLS,
+PALS, TCCC, PHTLS, etc).
 
 ## Important: how this actually gets DSHS/NREMT data
 

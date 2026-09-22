@@ -353,3 +353,15 @@ def settings():
         cert_types=cert_types,
         sources=VERIFICATION_SOURCES,
     )
+
+
+@main_bp.route("/settings/agencies/<int:agency_id>/delete", methods=["POST"])
+@login_required
+def agency_delete(agency_id):
+    agency = db.get_or_404(Agency, agency_id)
+    name = agency.name
+    provider_count = len(agency.providers)
+    db.session.delete(agency)
+    db.session.commit()
+    flash(f"Removed agency '{name}' and its {provider_count} provider(s).", "success")
+    return redirect(url_for("main.settings"))

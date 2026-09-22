@@ -6,7 +6,15 @@
 
 <h2>Agencies</h2>
 <ul>
-  {% for a in agencies %}<li>{{ a.name }} ({{ a.providers|length }} providers)</li>{% endfor %}
+  {% for a in agencies %}
+  <li>
+    {{ a.name }} ({{ a.providers|length }} provider(s))
+    <form method="post" action="{{ url_for('main.agency_delete', agency_id=a.id) }}" class="inline-form"
+          onsubmit="return confirm('Delete {{ a.name }}{% if a.providers %} and all {{ a.providers|length }} of its provider(s) and their certifications{% endif %}? This cannot be undone.');">
+      <button type="submit" class="button-danger">Delete</button>
+    </form>
+  </li>
+  {% endfor %}
 </ul>
 <form method="post" class="inline-form">
   <input type="hidden" name="form_type" value="agency">

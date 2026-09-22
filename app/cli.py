@@ -21,7 +21,6 @@ DEFAULT_CERT_TYPES = [
 
 DEFAULT_AGENCIES = [
     "Bexar County 2 Fire Department",
-    "Bergheim Volunteer Fire Department",
 ]
 
 
