@@ -129,6 +129,14 @@ this app holds real PII (names, certificate numbers), don't share the
 login with anyone outside the department, and treat `ADMIN_PASSWORD` like
 any other credential.
 
+**If `DATABASE_URL` never got set to a real Postgres connection string**,
+the app falls back to a local SQLite file — which on Render's free web
+service does **not** survive a redeploy. Every push to this repo triggers
+one, so anything entered would quietly vanish the next time the app
+updates. A bright yellow banner at the top of every page will tell you if
+this is currently the case — if you see it, fix `DATABASE_URL` in the
+Environment tab before entering (or re-entering) any real data.
+
 To add another login for someone else once it's deployed, open the
 **Shell** tab on the Render service and run `flask create-user jsmith`
 the same as you would locally.

@@ -1,5 +1,7 @@
 from datetime import date
 
+from flask import current_app
+
 from app.models import STATUS_CRITICAL, STATUS_EXPIRED, STATUS_WARNING
 
 STATUS_CSS = {
@@ -13,4 +15,10 @@ STATUS_CSS = {
 def register_template_helpers(app):
     @app.context_processor
     def inject_globals():
-        return {"today": date.today(), "status_css": STATUS_CSS}
+        return {
+            "today": date.today(),
+            "status_css": STATUS_CSS,
+            "ephemeral_storage_warning": current_app.config.get(
+                "EPHEMERAL_STORAGE_WARNING", False
+            ),
+        }

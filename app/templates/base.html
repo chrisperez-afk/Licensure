@@ -7,6 +7,14 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+  {% if ephemeral_storage_warning %}
+  <div class="storage-warning">
+    ⚠ This site is running on temporary storage — everything entered here
+    will be lost the next time it redeploys. Set <code>DATABASE_URL</code>
+    to a real Postgres database in Render's Environment tab to fix this
+    before entering real data.
+  </div>
+  {% endif %}
   {% if current_user.is_authenticated %}
   <header class="topbar">
     <div class="topbar-inner">

@@ -19,6 +19,16 @@ class Config:
     ) or f"sqlite:///{BASE_DIR / 'instance' / 'licensure.db'}"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # Render (and most hosted platforms) give a web service's local disk no
+    # persistence guarantee across deploys/restarts. RENDER is an env var
+    # Render sets automatically on every service it runs; if we're on
+    # Render and still pointed at a local SQLite file (DATABASE_URL wasn't
+    # set to a real database), every redeploy silently wipes all data.
+    # Surface that loudly instead of letting it happen quietly again.
+    EPHEMERAL_STORAGE_WARNING = bool(
+        os.environ.get("RENDER")
+    ) and SQLALCHEMY_DATABASE_URI.startswith("sqlite:")
+
     WARNING_DAYS = int(os.environ.get("WARNING_DAYS", 90))
     CRITICAL_DAYS = int(os.environ.get("CRITICAL_DAYS", 30))
 
