@@ -223,3 +223,14 @@ Set in `.env` (see `.env.example`):
   Fine for now since this is early days with no real production data at
   stake; worth adding (Flask-Migrate) before the schema changes again
   after real data has accumulated.
+- Python version is pinned (`PYTHON_VERSION` in `render.yaml`, and a
+  `.python-version` file) rather than left to whatever Render defaults to.
+  This is deliberate: `psycopg2-binary` (the Postgres driver) ships
+  prebuilt binaries for specific Python versions, and Render defaulting to
+  a newer Python than that driver has a wheel for caused a hard crash on
+  startup — `ImportError: ... undefined symbol: _PyInterpreterState_Get`
+  — every time the app tried to connect to Postgres, on any provider,
+  regardless of the database itself being configured correctly. It never
+  showed up on SQLite because that path never imports psycopg2. If a
+  future Python bump ever needs a newer `psycopg2-binary` to go with it,
+  bump both together and confirm the import works before deploying.
