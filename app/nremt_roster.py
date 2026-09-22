@@ -11,7 +11,7 @@ here — it's a straight file upload.
 from datetime import date, datetime
 
 from app import db
-from app.matching import find_matching_providers
+from app.matching import find_matching_providers_in
 from app.models import Certification, CertificationType, Provider
 from app.xlsx_utils import load_workbook_safe
 
@@ -152,18 +152,24 @@ def sync_nremt_roster(records, agency):
             cert_type_cache[name] = ct
         return cert_type_cache[name]
 
+    # Fetch once and work in memory from here — three separate database
+    # queries per record (by cert number, by EMS ID, by name) in a loop of
+    # any real size is slow, and on a memory-constrained host risks
+    # running the process out of memory outright rather than just being
+    # slow.
+    providers = Provider.query.filter(Provider.agency_id == agency.id).all()
+    certs_by_number = {
+        c.certificate_number: c
+        for c in Certification.query.join(Provider).filter(Provider.agency_id == agency.id).all()
+        if c.certificate_number
+    }
+    providers_by_ems_id = {p.nremt_ems_id: p for p in providers if p.nremt_ems_id}
+
     for rec in records:
         cert_type = get_cert_type(rec["level"])
         notes = f"NREMT status: {rec['status']}" if rec["status"] else None
 
-        existing_cert = (
-            Certification.query.join(Provider)
-            .filter(
-                Certification.certificate_number == rec["registry_number"],
-                Provider.agency_id == agency.id,
-            )
-            .first()
-        )
+        existing_cert = certs_by_number.get(rec["registry_number"])
 
         if existing_cert:
             existing_cert.cert_type_id = cert_type.id
@@ -176,17 +182,14 @@ def sync_nremt_roster(records, agency):
             provider = existing_cert.provider
             if rec["ems_id"] and not provider.nremt_ems_id:
                 provider.nremt_ems_id = rec["ems_id"]
+                providers_by_ems_id[rec["ems_id"]] = provider
             stats["certs_updated"] += 1
             continue
 
-        provider = None
-        if rec["ems_id"]:
-            provider = Provider.query.filter_by(
-                agency_id=agency.id, nremt_ems_id=rec["ems_id"]
-            ).first()
+        provider = providers_by_ems_id.get(rec["ems_id"]) if rec["ems_id"] else None
 
         if not provider:
-            name_matches = find_matching_providers(rec["first_name"], rec["last_name"], agency)
+            name_matches = find_matching_providers_in(rec["first_name"], rec["last_name"], providers)
             provider = next(
                 (
                     p
@@ -197,6 +200,7 @@ def sync_nremt_roster(records, agency):
             )
             if provider and rec["ems_id"] and not provider.nremt_ems_id:
                 provider.nremt_ems_id = rec["ems_id"]
+                providers_by_ems_id[rec["ems_id"]] = provider
 
         if not provider:
             provider = Provider(
@@ -208,6 +212,9 @@ def sync_nremt_roster(records, agency):
             )
             db.session.add(provider)
             db.session.flush()
+            providers.append(provider)
+            if rec["ems_id"]:
+                providers_by_ems_id[rec["ems_id"]] = provider
             stats["providers_created"] += 1
 
         new_cert = Certification(
@@ -221,6 +228,7 @@ def sync_nremt_roster(records, agency):
             notes=notes,
         )
         db.session.add(new_cert)
+        certs_by_number[rec["registry_number"]] = new_cert
         stats["certs_created"] += 1
 
     db.session.commit()

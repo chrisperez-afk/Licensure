@@ -7,8 +7,8 @@ from flask_login import login_required
 
 from app import db
 from app.dshs_roster import parse_dshs_roster, sync_dshs_roster
-from app.matching import find_or_create_provider
-from app.models import Agency, Certification, CertificationType
+from app.matching import find_matching_providers_in
+from app.models import Agency, Certification, CertificationType, Provider
 from app.nremt_roster import parse_nremt_roster, sync_nremt_roster
 
 csv_bp = Blueprint("csv_import", __name__, url_prefix="/import")
@@ -87,6 +87,13 @@ def import_csv():
         certs_created = 0
         row_errors = []
 
+        # Cached per agency (a CSV usually covers one agency, but can
+        # cover several) so matching a name against the existing roster
+        # is one query per agency for the whole import, not one query per
+        # row — the latter is what ran a roster sync out of memory on a
+        # small hosted instance (see dshs_roster.py/nremt_roster.py).
+        providers_by_agency = {}
+
         for i, row in enumerate(reader, start=2):  # row 1 is the header
             first_name = (row.get("first_name") or "").strip()
             last_name = (row.get("last_name") or "").strip()
@@ -102,11 +109,22 @@ def import_csv():
                 db.session.add(agency)
                 db.session.flush()
 
-            provider, created = find_or_create_provider(first_name, last_name, agency)
-            if created:
-                providers_created += 1
-            else:
+            if agency.id not in providers_by_agency:
+                providers_by_agency[agency.id] = Provider.query.filter(
+                    Provider.agency_id == agency.id
+                ).all()
+            candidates = providers_by_agency[agency.id]
+
+            matches = find_matching_providers_in(first_name, last_name, candidates)
+            if matches:
+                provider = matches[0]
                 providers_updated += 1
+            else:
+                provider = Provider(first_name=first_name, last_name=last_name, agency_id=agency.id)
+                db.session.add(provider)
+                db.session.flush()
+                candidates.append(provider)
+                providers_created += 1
 
             employee_id = (row.get("employee_id") or "").strip()
             if employee_id:

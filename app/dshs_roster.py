@@ -25,7 +25,7 @@ department's own listing, roles with no credential number such as
 from datetime import date, datetime
 
 from app import db
-from app.matching import find_matching_providers
+from app.matching import find_matching_providers_in
 from app.models import Certification, CertificationType, Provider
 
 
@@ -149,17 +149,20 @@ def sync_dshs_roster(records, agency):
             cert_type_cache[description] = ct
         return cert_type_cache[description]
 
+    # Fetch once and work in memory from here — matching every record
+    # against a fresh database query in a loop of this size is what
+    # actually ran the process out of memory on a small hosted instance.
+    providers = Provider.query.filter(Provider.agency_id == agency.id).all()
+    certs_by_number = {
+        c.certificate_number: c
+        for c in Certification.query.join(Provider).filter(Provider.agency_id == agency.id).all()
+        if c.certificate_number
+    }
+
     for rec in records:
         cert_type = get_cert_type(rec["cert_description"])
 
-        existing_cert = (
-            Certification.query.join(Provider)
-            .filter(
-                Certification.certificate_number == rec["cert_number"],
-                Provider.agency_id == agency.id,
-            )
-            .first()
-        )
+        existing_cert = certs_by_number.get(rec["cert_number"])
 
         if existing_cert:
             existing_cert.cert_type_id = cert_type.id
@@ -169,7 +172,7 @@ def sync_dshs_roster(records, agency):
             stats["certs_updated"] += 1
             continue
 
-        candidates = find_matching_providers(rec["first_name"], rec["last_name"], agency)
+        candidates = find_matching_providers_in(rec["first_name"], rec["last_name"], providers)
 
         provider = next(
             (
@@ -186,6 +189,7 @@ def sync_dshs_roster(records, agency):
             )
             db.session.add(provider)
             db.session.flush()
+            providers.append(provider)
             stats["providers_created"] += 1
 
         new_cert = Certification(
@@ -197,6 +201,7 @@ def sync_dshs_roster(records, agency):
             last_verified_date=today,
         )
         db.session.add(new_cert)
+        certs_by_number[rec["cert_number"]] = new_cert
         stats["certs_created"] += 1
 
     db.session.commit()
