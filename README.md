@@ -7,27 +7,34 @@ other credential you want to watch (CPR/BLS, ACLS, PALS, TCCC, PHTLS, etc).
 
 ## Important: how this actually gets DSHS/NREMT data
 
-Neither the **Texas DSHS EMS Certification Verification** tool nor the
-**NREMT Verify Credentials** tool offers a public API or bulk-download feed.
-Both are one-record-at-a-time web lookups intended for a human to check a
-single person, and both are behind bot-protection that makes automated
-scraping unreliable and (per their terms) inappropriate to script.
+Neither DSHS nor NREMT has a public API. But Texas DSHS's provider page
+(the one you get to by looking up your EMS Provider License number, e.g.
+`vo.ras.dshs.state.tx.us/datamart/detailsTXRAS.do?anchor=...`) lists every
+certified person currently affiliated with your license under
+**"Related Party Name"** — that's your whole roster on one page, no login
+required, no API needed.
 
-So this app does **not** pull data automatically. Instead:
+**Sync DSHS Roster** (in the nav bar) is built around exactly that page:
 
-- You enter each provider's certification number and expiration date once
-  (by hand, or via the CSV bulk importer).
-- The dashboard tracks expirations and color-codes anything expired or
-  coming due (default: red at 0 days, orange at 30 days, yellow at 90 days).
-- Each certification row has a **"Check on DSHS/NREMT ↗"** link that opens
-  the official verification page in a new tab so you (or whoever's doing
-  credentialing that week) can manually confirm the record.
-- After confirming, click **"Verified Today"** to log the check and update
-  the expiration date if it changed.
+1. Pull up your provider page on DSHS, select the roster section (or the
+   whole page — extra text is ignored), and copy it.
+2. Paste it into the **Sync DSHS Roster** form and submit.
+3. Every person on that page gets added or updated: name, certification
+   type, certificate number, and expiration date, all matched by DSHS's own
+   certificate number so re-pasting is always safe (it updates existing
+   records, it never duplicates them) — and every certification found this
+   way is automatically marked **verified today**, since the data just came
+   straight from DSHS.
 
-This keeps the workflow honest: the dashboard is your single source of
-truth for *who's coming due and needs a recheck*, and the official sites
-remain the source of truth for the actual certification status.
+Re-run this any time you want a refresh — weekly, monthly, whatever fits
+your credentialing cycle. It's the primary way to keep the dashboard
+current.
+
+For anything DSHS doesn't cover — NREMT certifications, CPR/BLS, ACLS,
+TCCC, and so on — use manual entry or **Import CSV** the same way, and use
+the **"Check on DSHS/NREMT ↗"** link on any certification row (opens the
+official verification page) plus **"Verified Today"** to log a manual
+spot-check the same way the roster sync does automatically.
 
 ## Setup
 
@@ -57,16 +64,18 @@ flask create-user jsmith
 
 ## Day-to-day use
 
-1. **Add providers** one at a time (`Add Provider`) or in bulk (`Import
-   CSV` — download the template first, it shows the expected columns).
-2. **Add certifications** on each provider's detail page: type, certificate
-   number, source (DSHS/NREMT/Other), issue date, expiration date.
+1. **Sync DSHS Roster** first — this gets most of your roster and their
+   Texas certifications in one paste (see above).
+2. **Add providers** one at a time (`Add Provider`) or in bulk (`Import
+   CSV` — download the template first, it shows the expected columns) for
+   anyone DSHS doesn't cover, or for NREMT/other credentials.
 3. Watch the **Dashboard** — the summary cards at the top show counts of
    expired / expiring in 30 days / expiring in 90 days / current. Click a
    card to filter the table to just those.
-4. When a certification is coming due, click **Check on DSHS/NREMT ↗** on
-   that row, confirm the current status/expiration on the official site,
-   update the expiration date if needed, and click **Verified Today**.
+4. For anything not covered by the DSHS sync, click **Check on DSHS/NREMT
+   ↗** on that row, confirm the current status/expiration on the official
+   site, update the expiration date if needed, and click **Verified
+   Today**.
 5. **Export CSV** any time for a report to send up the chain or to your
    Medical Director.
 

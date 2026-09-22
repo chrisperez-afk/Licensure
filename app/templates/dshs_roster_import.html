@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Sync DSHS Roster{% endblock %}
+{% block content %}
+
+<h1>Sync Roster from DSHS</h1>
+
+<p>
+  Texas DSHS's provider page lists every certified person currently
+  affiliated with your EMS Provider License under
+  "Related Party Name." Pull that page up, select and copy the roster
+  section (or the whole page &mdash; extra text is fine, it's ignored), and
+  paste it below. This updates everyone in one shot: matching people by
+  their DSHS certificate number, adding anyone new, and marking every
+  certification found here as <strong>verified today</strong> since it just
+  came straight from the source.
+</p>
+<p class="muted">
+  Safe to re-run any time you want a refresh &mdash; re-pasting the same or
+  an updated roster updates existing records instead of duplicating them.
+</p>
+
+<form method="post" class="stacked-form" style="max-width: 100%;">
+  <label>Agency
+    <select name="agency_id" required>
+      {% for a in agencies %}
+      <option value="{{ a.id }}">{{ a.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Pasted Roster Text
+    <textarea name="roster_text" rows="16" placeholder="Paste the DSHS page content here..." required style="font-family: monospace; font-size: 0.82rem;"></textarea>
+  </label>
+  <button type="submit">Parse &amp; Sync</button>
+</form>
+
+{% endblock %}

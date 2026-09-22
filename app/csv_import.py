@@ -6,7 +6,9 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required
 
 from app import db
-from app.models import Agency, Certification, CertificationType, Provider
+from app.dshs_roster import parse_dshs_roster, sync_dshs_roster
+from app.matching import find_or_create_provider
+from app.models import Agency, Certification, CertificationType
 
 csv_bp = Blueprint("csv_import", __name__, url_prefix="/import")
 
@@ -99,17 +101,11 @@ def import_csv():
                 db.session.add(agency)
                 db.session.flush()
 
-            provider = Provider.query.filter_by(
-                first_name=first_name, last_name=last_name, agency_id=agency.id
-            ).first()
-            if provider:
-                providers_updated += 1
-            else:
-                provider = Provider(
-                    first_name=first_name, last_name=last_name, agency_id=agency.id
-                )
-                db.session.add(provider)
+            provider, created = find_or_create_provider(first_name, last_name, agency)
+            if created:
                 providers_created += 1
+            else:
+                providers_updated += 1
 
             employee_id = (row.get("employee_id") or "").strip()
             if employee_id:
@@ -174,3 +170,55 @@ def import_csv():
         return redirect(url_for("main.dashboard"))
 
     return render_template("import.html")
+
+
+@csv_bp.route("/dshs-roster", methods=["GET", "POST"])
+@login_required
+def dshs_roster():
+    agencies = Agency.query.order_by(Agency.name).all()
+
+    if request.method == "POST":
+        agency_id = request.form.get("agency_id", type=int)
+        pasted_text = request.form.get("roster_text", "")
+
+        agency = db.session.get(Agency, agency_id) if agency_id else None
+        if not agency:
+            flash("Choose which agency this roster belongs to.", "danger")
+            return redirect(url_for("csv_import.dshs_roster"))
+
+        if not pasted_text.strip():
+            flash("Paste the roster text from the DSHS page first.", "danger")
+            return redirect(url_for("csv_import.dshs_roster"))
+
+        records, skipped = parse_dshs_roster(pasted_text)
+
+        if not records:
+            flash(
+                "Couldn't find any personnel records in that text. Make sure you "
+                "copied the section starting at \"Related Party Name\" (or the "
+                "whole page), including the Status and Expiration Date lines.",
+                "danger",
+            )
+            return redirect(url_for("csv_import.dshs_roster"))
+
+        stats = sync_dshs_roster(records, agency)
+
+        summary = (
+            f"Synced {len(records)} record(s) from DSHS for {agency.name}: "
+            f"{stats['providers_created']} new provider(s), "
+            f"{stats['certs_created']} new certification(s), "
+            f"{stats['certs_updated']} existing certification(s) refreshed "
+            f"and marked verified today."
+        )
+        flash(summary, "success")
+        if skipped:
+            flash(
+                f"{skipped} line(s) in the pasted text looked like a credential row "
+                f"but didn't fully match the expected pattern, and were skipped. "
+                f"Double check those people got picked up.",
+                "warning",
+            )
+
+        return redirect(url_for("main.dashboard"))
+
+    return render_template("dshs_roster_import.html", agencies=agencies)
