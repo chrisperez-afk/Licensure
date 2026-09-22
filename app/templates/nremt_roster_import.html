@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Sync NREMT Roster{% endblock %}
+{% block content %}
+
+<h1>Sync Roster from NREMT</h1>
+
+<p>
+  NREMT doesn't have a public agency lookup, but your NREMT organization
+  account can export a roster of everyone certified under your agency as a
+  spreadsheet. Export that file and upload it here to sync everyone's
+  name, certification level, registry number, and recert cycle dates in
+  one shot &mdash; matched by NREMT's own registry number and EMS ID so
+  re-uploading is always safe (it updates existing records, it never
+  duplicates them), and every certification found this way is
+  automatically marked <strong>verified today</strong>.
+</p>
+<p class="muted">
+  People also picked up by the DSHS roster sync are matched to the same
+  provider record where possible, so you don't end up with two entries for
+  one person.
+</p>
+
+<form method="post" enctype="multipart/form-data" class="stacked-form">
+  <label>Agency
+    <select name="agency_id" required>
+      {% for a in agencies %}
+      <option value="{{ a.id }}">{{ a.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Roster File (.xlsx)
+    <input type="file" name="roster_file" accept=".xlsx" required>
+  </label>
+  <button type="submit">Upload &amp; Sync</button>
+</form>
+
+{% endblock %}

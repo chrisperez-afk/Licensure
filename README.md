@@ -28,13 +28,33 @@ required, no API needed.
 
 Re-run this any time you want a refresh — weekly, monthly, whatever fits
 your credentialing cycle. It's the primary way to keep the dashboard
-current.
+current for Texas certifications.
 
-For anything DSHS doesn't cover — NREMT certifications, CPR/BLS, ACLS,
-TCCC, and so on — use manual entry or **Import CSV** the same way, and use
-the **"Check on DSHS/NREMT ↗"** link on any certification row (opens the
-official verification page) plus **"Verified Today"** to log a manual
-spot-check the same way the roster sync does automatically.
+NREMT doesn't have a page like that, but it does let you export a roster
+of everyone certified under your agency from your NREMT organization
+account (Name / EMS ID / Registry # / Status / Level / Recert Cycle
+columns). **Sync NREMT Roster** takes that exported file directly:
+
+1. Export your roster from NREMT as a spreadsheet.
+2. Upload it under **Sync NREMT Roster**.
+3. Everyone gets added or updated — certification level, registry number,
+   recert cycle dates — matched by NREMT's own registry number (safe to
+   re-upload, same as the DSHS sync) and cross-matched by name against
+   anyone already added via the DSHS sync, so one person doesn't end up as
+   two separate entries just because they showed up in both sources.
+
+If NREMT marks someone **Inactive** (they can be inactive with NREMT even
+if their recert cycle hasn't technically lapsed yet — worth knowing if
+you're checking who's actually deployable), that shows up as a red
+"Inactive" badge next to their status on the dashboard, and in the Notes
+column on their certification, even though the color-coded expiration
+status is still date-driven.
+
+For anything neither source covers — CPR/BLS, ACLS, TCCC, and so on — use
+manual entry or **Import CSV**, and use the **"Check on DSHS/NREMT ↗"**
+link on any certification row (opens the official verification page) plus
+**"Verified Today"** to log a manual spot-check the same way the roster
+syncs do automatically.
 
 ## Setup
 
@@ -64,18 +84,21 @@ flask create-user jsmith
 
 ## Day-to-day use
 
-1. **Sync DSHS Roster** first — this gets most of your roster and their
-   Texas certifications in one paste (see above).
+1. **Sync DSHS Roster** and **Sync NREMT Roster** first — together these
+   cover most of your roster and their Texas/national certifications in
+   one paste and one upload (see above).
 2. **Add providers** one at a time (`Add Provider`) or in bulk (`Import
    CSV` — download the template first, it shows the expected columns) for
-   anyone DSHS doesn't cover, or for NREMT/other credentials.
+   anyone neither sync covers, or for other credentials (CPR/BLS, ACLS,
+   TCCC, PHTLS, etc).
 3. Watch the **Dashboard** — the summary cards at the top show counts of
    expired / expiring in 30 days / expiring in 90 days / current. Click a
-   card to filter the table to just those.
-4. For anything not covered by the DSHS sync, click **Check on DSHS/NREMT
-   ↗** on that row, confirm the current status/expiration on the official
-   site, update the expiration date if needed, and click **Verified
-   Today**.
+   card to filter the table to just those. A red "Inactive" badge flags
+   anyone NREMT lists as inactive.
+4. For anything not covered by the roster syncs, click **Check on
+   DSHS/NREMT ↗** on that row, confirm the current status/expiration on
+   the official site, update the expiration date if needed, and click
+   **Verified Today**.
 5. **Export CSV** any time for a report to send up the chain or to your
    Medical Director.
 

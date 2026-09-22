@@ -9,6 +9,7 @@ from app import db
 from app.dshs_roster import parse_dshs_roster, sync_dshs_roster
 from app.matching import find_or_create_provider
 from app.models import Agency, Certification, CertificationType
+from app.nremt_roster import parse_nremt_roster, sync_nremt_roster
 
 csv_bp = Blueprint("csv_import", __name__, url_prefix="/import")
 
@@ -222,3 +223,58 @@ def dshs_roster():
         return redirect(url_for("main.dashboard"))
 
     return render_template("dshs_roster_import.html", agencies=agencies)
+
+
+@csv_bp.route("/nremt-roster", methods=["GET", "POST"])
+@login_required
+def nremt_roster():
+    agencies = Agency.query.order_by(Agency.name).all()
+
+    if request.method == "POST":
+        agency_id = request.form.get("agency_id", type=int)
+        file = request.files.get("roster_file")
+
+        agency = db.session.get(Agency, agency_id) if agency_id else None
+        if not agency:
+            flash("Choose which agency this roster belongs to.", "danger")
+            return redirect(url_for("csv_import.nremt_roster"))
+
+        if not file or file.filename == "":
+            flash("Choose the roster file exported from your NREMT account.", "danger")
+            return redirect(url_for("csv_import.nremt_roster"))
+
+        try:
+            records, skipped = parse_nremt_roster(file.stream)
+        except ValueError as exc:
+            flash(str(exc), "danger")
+            return redirect(url_for("csv_import.nremt_roster"))
+
+        if not records:
+            flash(
+                "Couldn't find any personnel rows in that file. Make sure it's "
+                "the roster export with Name/EMS ID/Registry #/Status/Level/"
+                "Recert Cycle columns.",
+                "danger",
+            )
+            return redirect(url_for("csv_import.nremt_roster"))
+
+        stats = sync_nremt_roster(records, agency)
+
+        summary = (
+            f"Synced {len(records)} record(s) from NREMT for {agency.name}: "
+            f"{stats['providers_created']} new provider(s), "
+            f"{stats['certs_created']} new certification(s), "
+            f"{stats['certs_updated']} existing certification(s) refreshed "
+            f"and marked verified today."
+        )
+        flash(summary, "success")
+        if skipped:
+            flash(
+                f"{skipped} row(s) in the file were missing a name or "
+                f"registry number and were skipped.",
+                "warning",
+            )
+
+        return redirect(url_for("main.dashboard"))
+
+    return render_template("nremt_roster_import.html", agencies=agencies)

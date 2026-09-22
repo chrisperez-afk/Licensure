@@ -25,6 +25,7 @@ department's own listing, roles with no credential number such as
 from datetime import date, datetime
 
 from app import db
+from app.matching import find_matching_providers
 from app.models import Certification, CertificationType, Provider
 
 
@@ -168,11 +169,7 @@ def sync_dshs_roster(records, agency):
             stats["certs_updated"] += 1
             continue
 
-        candidates = Provider.query.filter(
-            Provider.agency_id == agency.id,
-            db.func.lower(Provider.first_name) == rec["first_name"].lower(),
-            db.func.lower(Provider.last_name) == rec["last_name"].lower(),
-        ).all()
+        candidates = find_matching_providers(rec["first_name"], rec["last_name"], agency)
 
         provider = next(
             (

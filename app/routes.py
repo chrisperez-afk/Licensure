@@ -119,7 +119,7 @@ def export_csv():
             "Agency", "Last Name", "First Name", "Employee ID", "Rank/Title",
             "Certification", "Certificate Number", "Source", "Issue Date",
             "Expiration Date", "Days Until Expiration", "Status", "Last Verified",
-            "Direct Verify Link",
+            "Direct Verify Link", "Notes",
         ]
     )
     certs = Certification.query.join(Provider).order_by(
@@ -142,6 +142,7 @@ def export_csv():
                 STATUS_LABELS.get(c.status(), ""),
                 c.last_verified_date.isoformat() if c.last_verified_date else "",
                 c.direct_verify_url or "",
+                c.notes or "",
             ]
         )
     return Response(

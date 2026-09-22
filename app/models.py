@@ -83,6 +83,12 @@ class Provider(db.Model):
     phone = db.Column(db.String(40))
     active = db.Column(db.Boolean, default=True, nullable=False)
 
+    # NREMT's own per-person identifier (stable across name changes and
+    # credential level upgrades, unlike a certificate number). Backfilled
+    # automatically the first time someone is matched during an NREMT
+    # roster sync.
+    nremt_ems_id = db.Column(db.String(40))
+
     agency_id = db.Column(db.Integer, db.ForeignKey("agency.id"), nullable=False)
     agency = db.relationship("Agency", back_populates="providers")
 
