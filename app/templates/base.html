@@ -18,7 +18,10 @@
   {% if current_user.is_authenticated %}
   <header class="topbar">
     <div class="topbar-inner">
-      <a class="brand" href="{{ url_for('main.dashboard') }}">EMS Licensure Dashboard</a>
+      <a class="brand" href="{{ url_for('main.dashboard') }}">
+        <img src="{{ url_for('static', filename='img/bc2fd-badge.png') }}" alt="Bexar County ESD 2 badge">
+        EMS Licensure Dashboard
+      </a>
       <nav>
         <a href="{{ url_for('main.dashboard') }}">Dashboard</a>
         <a href="{{ url_for('main.provider_new') }}">Add Provider</a>
