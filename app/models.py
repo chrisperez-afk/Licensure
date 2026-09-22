@@ -89,12 +89,19 @@ class Provider(db.Model):
     # roster sync.
     nremt_ems_id = db.Column(db.String(40))
 
+    # FoamFrat's own per-person identifier, for matching once API access
+    # exists. Not populated by anything yet.
+    foamfrat_user_id = db.Column(db.String(40))
+
     agency_id = db.Column(db.Integer, db.ForeignKey("agency.id"), nullable=False)
     agency = db.relationship("Agency", back_populates="providers")
 
     certifications = db.relationship(
         "Certification", back_populates="provider", cascade="all, delete-orphan",
         order_by="Certification.expiration_date",
+    )
+    assignment_completions = db.relationship(
+        "AssignmentCompletion", back_populates="provider", cascade="all, delete-orphan"
     )
 
     @property
@@ -158,3 +165,48 @@ class Certification(db.Model):
 
     def verify_url(self):
         return self.direct_verify_url or VERIFICATION_SOURCES.get(self.source, {}).get("url")
+
+
+COMPLETION_NOT_STARTED = "not_started"
+COMPLETION_IN_PROGRESS = "in_progress"
+COMPLETION_COMPLETED = "completed"
+
+COMPLETION_LABELS = {
+    COMPLETION_NOT_STARTED: "Not Started",
+    COMPLETION_IN_PROGRESS: "In Progress",
+    COMPLETION_COMPLETED: "Completed",
+}
+
+
+class Assignment(db.Model):
+    """A CE assignment pushed out via FoamFrat (or entered by hand until
+    API access exists) — e.g. "Airway Management Recert 2026"."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    assigned_date = db.Column(db.Date)
+    due_date = db.Column(db.Date)
+
+    completions = db.relationship(
+        "AssignmentCompletion", back_populates="assignment", cascade="all, delete-orphan"
+    )
+
+    def progress(self):
+        total = len(self.completions)
+        completed = sum(1 for c in self.completions if c.status == COMPLETION_COMPLETED)
+        return completed, total
+
+
+class AssignmentCompletion(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+
+    provider_id = db.Column(db.Integer, db.ForeignKey("provider.id"), nullable=False)
+    provider = db.relationship("Provider", back_populates="assignment_completions")
+
+    assignment_id = db.Column(db.Integer, db.ForeignKey("assignment.id"), nullable=False)
+    assignment = db.relationship("Assignment", back_populates="completions")
+
+    status = db.Column(db.String(20), default=COMPLETION_NOT_STARTED, nullable=False)
+    completed_date = db.Column(db.Date)
+    notes = db.Column(db.Text)

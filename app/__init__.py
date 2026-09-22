@@ -30,10 +30,12 @@ def create_app(config_class=Config):
     from app.auth import auth_bp
     from app.routes import main_bp
     from app.csv_import import csv_bp
+    from app.foamfrat import foamfrat_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(csv_bp)
+    app.register_blueprint(foamfrat_bp)
 
     from app.cli import register_cli, seed_admin_if_configured, seed_defaults
     register_cli(app)

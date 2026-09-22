@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}FoamFrat{% endblock %}
+{% block content %}
+
+<h1>FoamFrat</h1>
+
+<p>
+  Tracks CE completion for assignments pushed out through FoamFrat.
+  FoamFrat doesn't have a public API, so until you have one from them,
+  mark completions here by hand as people finish their assigned courses.
+  Once you have API access, this can become a genuinely live view instead
+  &mdash; unlike DSHS/NREMT, FoamFrat having a real API means fetching
+  fresh on each page load is actually on the table.
+</p>
+
+<h2>New Assignment</h2>
+<form method="post" action="{{ url_for('foamfrat.assignment_new') }}" class="stacked-form">
+  <label>Name<input type="text" name="name" placeholder="e.g. Airway Management Recert 2026" required></label>
+  <label>Description<textarea name="description" rows="2"></textarea></label>
+  <label>Assigned Date<input type="date" name="assigned_date"></label>
+  <label>Due Date<input type="date" name="due_date"></label>
+  <button type="submit">Create &amp; Assign to Active Roster</button>
+</form>
+<p class="muted">Assigns to everyone currently marked active. You can drop individuals on the assignment's own page.</p>
+
+<h2>Assignments</h2>
+<table class="cert-table">
+  <thead>
+    <tr><th>Assignment</th><th>Assigned</th><th>Due</th><th>Progress</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for a in assignments %}
+    {% set completed, total = a.progress() %}
+    <tr>
+      <td><a href="{{ url_for('foamfrat.assignment_detail', assignment_id=a.id) }}">{{ a.name }}</a></td>
+      <td>{{ a.assigned_date.strftime('%m/%d/%Y') if a.assigned_date else '—' }}</td>
+      <td>{{ a.due_date.strftime('%m/%d/%Y') if a.due_date else '—' }}</td>
+      <td>{{ completed }} / {{ total }} completed</td>
+      <td>
+        <form method="post" action="{{ url_for('foamfrat.assignment_delete', assignment_id=a.id) }}"
+              onsubmit="return confirm('Delete assignment \'{{ a.name }}\'? This removes everyone\'s completion status for it. This cannot be undone.');">
+          <button type="submit" class="button-danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="empty">No assignments yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

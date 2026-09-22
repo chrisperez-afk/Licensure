@@ -56,6 +56,24 @@ link on any certification row (opens the official verification page) plus
 **"Verified Today"** to log a manual spot-check the same way the roster
 syncs do automatically.
 
+### FoamFrat CE tracking
+
+The **FoamFrat** section tracks completion of CE assignments pushed out
+through FoamFrat — separate from certifications/licensure, since an
+assignment isn't a credential with its own expiration date, it's a
+one-time (or recurring) training push with a completion status per
+person.
+
+FoamFrat doesn't currently have a public API, so this starts out as a
+manual tracker: create an assignment (it's pushed to everyone currently
+marked active), then mark each person Not Started / In Progress /
+Completed as they finish it, same as you'd track it in a spreadsheet but
+with the roster already there. If FoamFrat grants API access down the
+road, this is a reasonable candidate for a genuinely live view — fetched
+fresh on each page load — rather than a sync-and-store model, since
+(unlike DSHS/NREMT) there'd be an actual API to call. That's not built
+yet; ask for it once you have credentials to work with.
+
 ## Setup
 
 ```bash

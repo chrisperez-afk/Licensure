@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ assignment.name }}{% endblock %}
+{% block content %}
+
+<div class="detail-header">
+  <div>
+    <h1>{{ assignment.name }}</h1>
+    {% if assignment.description %}<p class="muted">{{ assignment.description }}</p>{% endif %}
+    <p class="muted">
+      {% if assignment.assigned_date %}Assigned {{ assignment.assigned_date.strftime('%m/%d/%Y') }}{% endif %}
+      {% if assignment.due_date %} · Due {{ assignment.due_date.strftime('%m/%d/%Y') }}{% endif %}
+    </p>
+  </div>
+  <div class="detail-actions">
+    <form method="post" action="{{ url_for('foamfrat.assignment_delete', assignment_id=assignment.id) }}"
+          onsubmit="return confirm('Delete assignment \'{{ assignment.name }}\'? This removes everyone\'s completion status for it. This cannot be undone.');">
+      <button type="submit" class="button-danger">Delete Assignment</button>
+    </form>
+  </div>
+</div>
+
+<div class="summary-cards">
+  <div class="card status-current">
+    <div class="card-count">{{ completed }}</div>
+    <div class="card-label">Completed</div>
+  </div>
+  <div class="card status-warning">
+    <div class="card-count">{{ completions|selectattr('status', 'equalto', 'in_progress')|list|length }}</div>
+    <div class="card-label">In Progress</div>
+  </div>
+  <div class="card status-expired">
+    <div class="card-count">{{ completions|selectattr('status', 'equalto', 'not_started')|list|length }}</div>
+    <div class="card-label">Not Started</div>
+  </div>
+  <div class="card">
+    <div class="card-count">{{ total }}</div>
+    <div class="card-label">Assigned Total</div>
+  </div>
+</div>
+
+<table class="cert-table">
+  <thead>
+    <tr><th>Provider</th><th>Status</th><th>Completed Date</th><th>Notes</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for c in completions %}
+    <tr class="{{ 'status-current' if c.status == 'completed' else ('status-warning' if c.status == 'in_progress' else 'status-expired') }}">
+      <form id="completion-{{ c.id }}" method="post" action="{{ url_for('foamfrat.completion_edit', completion_id=c.id) }}"></form>
+      <td>{{ c.provider.full_name }}</td>
+      <td>
+        <select name="status" form="completion-{{ c.id }}">
+          {% for key, label in completion_labels.items() %}
+          <option value="{{ key }}" {{ 'selected' if key == c.status }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </td>
+      <td><input type="date" name="completed_date" form="completion-{{ c.id }}" value="{{ c.completed_date.isoformat() if c.completed_date else '' }}"></td>
+      <td><input type="text" name="notes" form="completion-{{ c.id }}" value="{{ c.notes or '' }}" size="18"></td>
+      <td class="cert-actions">
+        <button type="submit" form="completion-{{ c.id }}">Save</button>
+        <form method="post" action="{{ url_for('foamfrat.completion_remove', completion_id=c.id) }}" class="inline-form"
+              onsubmit="return confirm('Remove {{ c.provider.full_name }} from this assignment?');">
+          <button type="submit" class="button-danger">Remove</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="empty">No one is on this assignment.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p><a class="button-link" href="{{ url_for('foamfrat.index') }}">&larr; All Assignments</a></p>
+
+{% endblock %}
