@@ -244,11 +244,23 @@ Set in `.env` (see `.env.example`):
   pull-based (someone checks it). If you want push alerts (e.g. a weekly
   email digest of what's expiring), that can be added as a scheduled job
   using the same database — ask and it can be built next.
-- There's no schema migration tool set up yet (just `db.create_all()`,
-  which only creates missing tables, not new columns on existing ones).
-  Fine for now since this is early days with no real production data at
-  stake; worth adding (Flask-Migrate) before the schema changes again
-  after real data has accumulated.
+- There's no real migration framework (Flask-Migrate/Alembic) set up —
+  `db.create_all()` only creates missing tables, never adds new columns to
+  a table that already exists. That gap caused a real outage: after
+  adding the `shift` column, the live site's existing `provider` table
+  didn't get it, and every page that touched `provider.shift` (which by
+  then was most of them) threw a 500. Fixed by adding `sync_schema()`
+  (`app/cli.py`), which runs on every boot right after `db.create_all()`
+  and adds any column present on a model but missing from that table's
+  actual columns in the database — verified by simulating the exact
+  broken state (a real synced dataset, with the newer columns and the
+  FoamFrat tables dropped out from under it) and confirming a normal boot
+  repairs the schema with the data fully intact. This covers the kind of
+  change the app has only ever needed so far — a new nullable column, or
+  a new table entirely (which `db.create_all()` already handles on its
+  own). It does not cover a rename, a drop, or a type change; if one of
+  those is ever needed, that's the point to bring in a real migration
+  tool instead of extending this further.
 - Python version is pinned (`PYTHON_VERSION` in `render.yaml`, and a
   `.python-version` file) rather than left to whatever Render defaults to.
   This is deliberate: `psycopg2-binary` (the Postgres driver) ships

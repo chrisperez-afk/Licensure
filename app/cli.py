@@ -1,6 +1,7 @@
 import os
 
 import click
+from sqlalchemy import inspect, text
 
 from app import db
 from app.models import Agency, CertificationType, User
@@ -24,10 +25,44 @@ DEFAULT_AGENCIES = [
 ]
 
 
+def sync_schema():
+    """Add any model column that's missing from a table that already
+    exists in the database.
+
+    db.create_all() only creates missing tables — a table that already
+    exists from an earlier boot is left exactly as it was, even if the
+    model has grown new columns since. That's fine for local dev (just
+    delete the SQLite file and re-init), but on a hosted database with
+    real data, every schema change this app makes needs this or a real
+    migration tool; this is the lightweight version, sufficient for the
+    simple case every change so far has actually been — adding a new
+    nullable column. It won't handle a rename, a drop, or a type change.
+    Safe to call on every boot: a table with no missing columns is a
+    no-op.
+    """
+    inspector = inspect(db.engine)
+    existing_tables = set(inspector.get_table_names())
+
+    for table in db.metadata.sorted_tables:
+        if table.name not in existing_tables:
+            continue  # db.create_all() creates this fresh, with every column
+        existing_columns = {c["name"] for c in inspector.get_columns(table.name)}
+        for column in table.columns:
+            if column.name in existing_columns:
+                continue
+            col_type = column.type.compile(dialect=db.engine.dialect)
+            db.session.execute(
+                text(f'ALTER TABLE "{table.name}" ADD COLUMN "{column.name}" {col_type}')
+            )
+    db.session.commit()
+
+
 def seed_defaults():
-    """Idempotent: create tables and seed default agencies/certification
-    types. Safe to call on every app boot, not just once."""
+    """Idempotent: create tables, add any columns missing from tables that
+    already exist, and seed default agencies/certification types. Safe to
+    call on every app boot, not just once."""
     db.create_all()
+    sync_schema()
 
     for name in DEFAULT_AGENCIES:
         if not Agency.query.filter_by(name=name).first():
