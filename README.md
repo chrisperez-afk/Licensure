@@ -133,6 +133,15 @@ To add another login for someone else once it's deployed, open the
 **Shell** tab on the Render service and run `flask create-user jsmith`
 the same as you would locally.
 
+**Locked out, or the login page won't accept anything?** This means no
+admin account exists yet — usually because `ADMIN_PASSWORD` got left
+blank during setup. Fix it in two steps: in Render's **Environment** tab,
+set `ADMIN_PASSWORD` to a real password and save (this redeploys
+automatically); then, whether or not that alone fixes it, open the
+**Shell** tab and run `flask reset-admin-password` — it creates the
+`admin` login if it's missing, or resets its password if it already
+exists, using whatever `ADMIN_PASSWORD` is currently set to.
+
 ## Day-to-day use
 
 1. **Sync DSHS Roster** and **Sync NREMT Roster** first — together these

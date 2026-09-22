@@ -83,6 +83,25 @@ def register_cli(app):
         seed_admin_if_configured()
         click.echo(f"Created admin user '{username}'.")
 
+    @app.cli.command("reset-admin-password")
+    def reset_admin_password():
+        """Force-set the admin login's password from ADMIN_* env vars,
+        creating that user if it doesn't exist yet. Use this if you're
+        locked out — e.g. ADMIN_PASSWORD was left blank on first deploy,
+        so no login ever got created."""
+        password = os.environ.get("ADMIN_PASSWORD")
+        if not password:
+            click.echo("Set ADMIN_PASSWORD (env var) before running this.")
+            return
+        username = os.environ.get("ADMIN_USERNAME", "admin")
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            user = User(username=username, email=os.environ.get("ADMIN_EMAIL", ""), is_admin=True)
+            db.session.add(user)
+        user.set_password(password)
+        db.session.commit()
+        click.echo(f"Password set for user '{username}'.")
+
     @app.cli.command("create-user")
     @click.argument("username")
     @click.password_option()
