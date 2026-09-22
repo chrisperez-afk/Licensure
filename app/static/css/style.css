@@ -1,27 +1,52 @@
 :root {
   /* Bexar County ESD 2 badge colors: navy shield, gold trim/lettering,
-     maroon center. */
+     maroon center. Dark theme throughout, tuned for a low-light station
+     screen rather than toggled — surfaces are layered navy-black, status
+     colors are brightened versions of the badge/semantic colors so they
+     stay readable against dark surfaces, and badges keep richer/deeper
+     fills since they're solid chips with white text, not text-on-dark. */
   --brand-navy: #14213d;
-  --brand-navy-dark: #0c1526;
-  --brand-gold: #c9a227;
+  --brand-navy-dark: #0a0f1c;
+  --brand-gold: #d4af37;
   --brand-gold-dark: #a3821c;
   --brand-maroon: #8f1d21;
 
-  --red: #8f1d21;
-  --red-bg: #fbeaea;
-  --orange: #d35400;
-  --orange-bg: #fdf1e3;
-  --yellow: #9a7d0a;
-  --yellow-bg: #fdf7e3;
-  --green: #1e7e34;
-  --green-bg: #e9f7ef;
-  --ink: #1f2933;
-  --muted: #6b7785;
-  --border: #dfe3e8;
-  --bg: #f5f7fa;
+  --red: #e0655e;
+  --red-bg: #3a181a;
+  --red-fill: #8f1d21;
+  --orange: #f0922e;
+  --orange-bg: #33220f;
+  --yellow: #dcb643;
+  --yellow-bg: #332911;
+  --yellow-fill: #b8960c;
+  --green: #4cb66a;
+  --green-bg: #143526;
+  --green-fill: #1e7e34;
+
+  --ink: #e7ebf3;
+  --muted: #93a0b8;
+  --border: #2a3650;
+  --bg: #0b1220;
+  --surface: #141d30;
+  --surface-alt: #1b2745;
 }
 
 * { box-sizing: border-box; }
+
+/* Base styling for every form control, so a bare input in a table cell
+   (e.g. the inline cert-edit rows) is never missed and left showing the
+   browser's light default inside an otherwise dark page. More specific
+   rules below (.filters, .stacked-form, etc.) can still refine this. */
+input, select, textarea {
+  background: var(--surface-alt);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: inherit;
+}
+input::placeholder, textarea::placeholder { color: var(--muted); }
+input[type="checkbox"] { accent-color: var(--brand-gold); }
+::-webkit-calendar-picker-indicator { filter: invert(1); }
 
 body {
   margin: 0;
@@ -31,18 +56,18 @@ body {
 }
 
 .storage-warning {
-  background: #fff3cd;
-  color: #664d03;
-  border-bottom: 2px solid #b8960c;
+  background: #4a3a0a;
+  color: #ffe293;
+  border-bottom: 2px solid var(--brand-gold);
   padding: 0.6rem 1.5rem;
   text-align: center;
   font-size: 0.88rem;
   font-weight: 600;
 }
-.storage-warning code { background: rgba(0,0,0,0.08); padding: 0.1rem 0.35rem; border-radius: 4px; }
+.storage-warning code { background: rgba(255,255,255,0.12); padding: 0.1rem 0.35rem; border-radius: 4px; }
 
 .topbar {
-  background: var(--brand-navy);
+  background: var(--brand-navy-dark);
   color: white;
   border-bottom: 3px solid var(--brand-gold);
 }
@@ -54,11 +79,12 @@ body {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
-.brand { color: var(--brand-gold); font-weight: 700; text-decoration: none; font-size: 1.1rem; letter-spacing: 0.02em; }
+.brand { display: flex; align-items: center; gap: 0.6rem; color: var(--brand-gold); font-weight: 700; text-decoration: none; font-size: 1.1rem; letter-spacing: 0.02em; }
+.brand img { height: 34px; width: auto; display: block; }
 .topbar nav a {
-  color: #cbd5e1;
+  color: #b6c2d9;
   text-decoration: none;
   margin-left: 1.1rem;
   font-size: 0.92rem;
@@ -73,7 +99,10 @@ body {
 
 .muted { color: var(--muted); }
 
-h1, h2 { color: var(--brand-navy); }
+a { color: var(--brand-gold); }
+a:visited { color: var(--brand-gold); }
+
+h1, h2 { color: var(--ink); }
 
 .flashes { margin-bottom: 1rem; }
 .flash {
@@ -85,7 +114,7 @@ h1, h2 { color: var(--brand-navy); }
 .flash-success { background: var(--green-bg); color: var(--green); }
 .flash-danger { background: var(--red-bg); color: var(--red); }
 .flash-warning { background: var(--yellow-bg); color: var(--yellow); }
-.flash-info { background: #e8eef7; color: var(--brand-navy); }
+.flash-info { background: var(--surface-alt); color: var(--brand-gold); }
 
 .summary-cards {
   display: grid;
@@ -94,7 +123,7 @@ h1, h2 { color: var(--brand-navy); }
   margin-bottom: 1.5rem;
 }
 .card {
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 1rem;
@@ -103,7 +132,7 @@ h1, h2 { color: var(--brand-navy); }
   text-align: center;
   transition: box-shadow 0.15s;
 }
-.card:hover, .card.active { box-shadow: 0 0 0 2px var(--brand-gold-dark) inset; }
+.card:hover, .card.active { box-shadow: 0 0 0 2px var(--brand-gold) inset; }
 .card-count { font-size: 1.8rem; font-weight: 700; }
 .card-label { font-size: 0.85rem; color: var(--muted); margin-top: 0.25rem; }
 
@@ -118,7 +147,7 @@ h1, h2 { color: var(--brand-navy); }
   gap: 0.5rem;
   align-items: center;
   margin-bottom: 1rem;
-  background: white;
+  background: var(--surface);
   padding: 0.75rem;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -127,13 +156,15 @@ h1, h2 { color: var(--brand-navy); }
   padding: 0.4rem 0.5rem;
   border: 1px solid var(--border);
   border-radius: 6px;
+  background: var(--surface-alt);
+  color: var(--ink);
 }
 .checkbox-label { display: flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; }
 
 table.cert-table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: var(--surface);
   border-radius: 8px;
   overflow: hidden;
   border: 1px solid var(--border);
@@ -144,7 +175,7 @@ table.cert-table th, table.cert-table td {
   border-bottom: 1px solid var(--border);
   font-size: 0.9rem;
 }
-table.cert-table th { background: #eef1f5; font-weight: 600; }
+table.cert-table th { background: var(--surface-alt); font-weight: 600; }
 table.cert-table tr.status-expired { background: var(--red-bg); }
 table.cert-table tr.status-critical { background: var(--orange-bg); }
 table.cert-table tr.status-warning { background: var(--yellow-bg); }
@@ -158,10 +189,10 @@ table.cert-table .empty { text-align: center; color: var(--muted); padding: 1.5r
   font-weight: 600;
   color: white;
 }
-.badge.status-expired { background: var(--red); }
+.badge.status-expired { background: var(--red-fill); }
 .badge.status-critical { background: var(--orange); }
-.badge.status-warning { background: #b8960c; }
-.badge.status-current { background: var(--green); }
+.badge.status-warning { background: var(--yellow-fill); }
+.badge.status-current { background: var(--green-fill); }
 
 .cert-actions { display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center; }
 .inline-form { display: inline; }
@@ -170,7 +201,7 @@ button, .button-link, .button-danger, .button-secondary {
   cursor: pointer;
   border-radius: 6px;
   border: 1px solid var(--border);
-  background: white;
+  background: var(--surface-alt);
   padding: 0.4rem 0.8rem;
   font-size: 0.85rem;
   text-decoration: none;
@@ -183,17 +214,26 @@ button[type="submit"], .filters button {
   border-color: var(--brand-gold-dark);
   font-weight: 600;
 }
-button[type="submit"]:hover, .filters button:hover { background: var(--brand-gold-dark); }
-.button-danger { color: var(--red); border-color: var(--red); }
-.button-secondary { color: var(--brand-navy); border-color: var(--brand-navy); }
-.button-link:hover { border-color: var(--brand-navy); color: var(--brand-navy); }
+button[type="submit"]:hover, .filters button:hover { background: var(--brand-gold-dark); color: white; }
+/* button[type="submit"] outranks a single class on specificity, so these
+   need the same element+attribute weight to actually override the gold
+   default for buttons that submit a form but aren't the primary action. */
+button[type="submit"].button-danger, .button-danger {
+  background: var(--surface-alt); color: var(--red); border-color: var(--red);
+}
+button[type="submit"].button-danger:hover, .button-danger:hover { background: var(--red-bg); }
+button[type="submit"].button-secondary, .button-secondary {
+  background: var(--surface-alt); color: var(--brand-gold); border-color: var(--brand-gold);
+}
+button[type="submit"].button-secondary:hover, .button-secondary:hover { background: var(--surface); }
+.button-link:hover { border-color: var(--brand-gold); color: var(--brand-gold); }
 
 .stacked-form {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   max-width: 480px;
-  background: white;
+  background: var(--surface);
   padding: 1.25rem;
   border-radius: 8px;
   border: 1px solid var(--border);
@@ -204,24 +244,29 @@ button[type="submit"]:hover, .filters button:hover { background: var(--brand-gol
   padding: 0.45rem 0.55rem;
   border: 1px solid var(--border);
   border-radius: 6px;
+  background: var(--surface-alt);
+  color: var(--ink);
 }
 .notes-label textarea { resize: vertical; }
 
 .login-card {
   max-width: 340px;
   margin: 4rem auto;
-  background: white;
+  background: var(--surface);
   padding: 2rem;
   border-radius: 10px;
   border: 1px solid var(--border);
   text-align: center;
 }
+.login-card img { height: 96px; width: auto; margin-bottom: 0.5rem; }
 .login-card form { display: flex; flex-direction: column; gap: 0.85rem; margin-top: 1rem; text-align: left; }
 .login-card label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.9rem; font-weight: 600; }
 .login-card input {
   padding: 0.5rem;
   border: 1px solid var(--border);
   border-radius: 6px;
+  background: var(--surface-alt);
+  color: var(--ink);
 }
 
 .detail-header {
@@ -237,7 +282,7 @@ button[type="submit"]:hover, .filters button:hover { background: var(--brand-gol
 .note-box {
   margin-top: 1.25rem;
   padding: 0.75rem 1rem;
-  background: #eef1f5;
+  background: var(--surface-alt);
   border-radius: 8px;
   font-size: 0.85rem;
 }
